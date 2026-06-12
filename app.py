@@ -616,21 +616,18 @@ def _header_html(lang):
     t = T[lang]
     return f"""
 <div class="app-header">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
-    <div>
-      <div style="font-size:1.5em;font-weight:800;margin-bottom:4px;letter-spacing:-0.02em;">{t['header_title']}</div>
-      <div style="font-size:0.92em;opacity:0.75;font-weight:400;">{t['header_sub']}</div>
-      <div style="margin-top:10px;font-size:0.83em;opacity:0.60;max-width:700px;">{t['header_desc']}</div>
-    </div>
-    <div id="lang-toggle" style="display:flex;gap:0;border-radius:8px;overflow:hidden;
-      border:1.5px solid rgba(255,255,255,0.35);align-self:flex-start;margin-top:4px;flex-shrink:0;">
-    </div>
-  </div>
+  <div style="font-size:1.55em;font-weight:800;margin-bottom:6px;letter-spacing:-0.02em;">{t['header_title']}</div>
+  <div style="font-size:0.90em;opacity:0.70;font-weight:400;">{t['header_sub']}</div>
+  <div style="margin-top:10px;font-size:0.82em;opacity:0.55;max-width:740px;line-height:1.5;">{t['header_desc']}</div>
 </div>"""
 
 def _sec_html(lang, key):
-    return (f"<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
-            f"letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>{T[lang][key]}</div>")
+    return (f"<div style='"
+            f"background:#1e3a5f;color:#ffffff;"
+            f"font-size:0.78em;font-weight:700;text-transform:uppercase;"
+            f"letter-spacing:0.09em;padding:11px 18px;"
+            f"margin:-1px -1px 16px -1px;border-radius:11px 11px 0 0;"
+            f"'>{T[lang][key]}</div>")
 
 def _empty_result(lang):
     return f"<div style='background:#ffffff;border:1px solid #dde3ec;border-radius:10px;" \
@@ -803,46 +800,83 @@ CSS = """
 *, body, .gradio-container {
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
 }
-body, .gradio-container, .main {
-    background: #f0f4f8 !important;
+body, .gradio-container, .main, .app {
+    background: #eef2f7 !important;
 }
 .gradio-container {
-    max-width: 1080px !important;
+    max-width: 1120px !important;
     margin: 0 auto !important;
-    padding: 0 16px !important;
+    padding: 16px !important;
 }
 footer { display: none !important; }
 
-/* Header bar */
+/* ── Header ── */
 .app-header {
-    background: #1e3a5f;
-    border-radius: 12px;
-    padding: 24px 32px;
-    margin-bottom: 4px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+    border-radius: 14px;
+    padding: 28px 36px;
+    margin-bottom: 0;
     color: white;
+    box-shadow: 0 4px 20px rgba(30,58,95,0.25);
 }
 
-/* Tab bar */
+/* ── Language toggle row ── */
+.lang-row {
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: 10px 0 4px !important;
+    gap: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+.lang-btn {
+    min-width: 62px !important;
+    padding: 7px 18px !important;
+    font-size: 0.82em !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    border-radius: 0 !important;
+    border: 1.5px solid #1e3a5f !important;
+    transition: all 0.15s !important;
+    box-shadow: none !important;
+}
+.lang-btn:first-child { border-radius: 8px 0 0 8px !important; }
+.lang-btn:last-child  { border-radius: 0 8px 8px 0 !important; }
+.lang-active {
+    background: #1e3a5f !important;
+    color: #ffffff !important;
+}
+.lang-inactive {
+    background: #ffffff !important;
+    color: #1e3a5f !important;
+}
+.lang-inactive:hover {
+    background: #f0f4f8 !important;
+}
+
+/* ── Tabs ── */
 .tabs > .tab-nav {
     background: #ffffff !important;
     border-radius: 10px !important;
-    padding: 6px !important;
-    border: 1px solid #dde3ec !important;
-    gap: 6px !important;
-    margin-bottom: 16px !important;
+    padding: 5px !important;
+    border: 1px solid #d0d9e6 !important;
+    gap: 4px !important;
+    margin-bottom: 20px !important;
     display: flex !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
 }
 .tabs > .tab-nav > button {
     flex: 1 !important;
     background: transparent !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 12px 20px !important;
-    font-size: 0.95em !important;
+    padding: 14px 24px !important;
+    font-size: 1.0em !important;
     font-weight: 600 !important;
     color: #64748b !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
+    letter-spacing: 0.01em !important;
 }
 .tabs > .tab-nav > button:hover {
     background: #f1f5f9 !important;
@@ -851,49 +885,100 @@ footer { display: none !important; }
 .tabs > .tab-nav > button.selected {
     background: #1e3a5f !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(30,58,95,0.25) !important;
+    box-shadow: 0 2px 10px rgba(30,58,95,0.30) !important;
+    font-weight: 700 !important;
 }
 
-/* Form panels */
-.gr-panel, .gr-box, .gr-form, .block {
+/* ── Form columns (section cards) ── */
+.form-col {
     background: #ffffff !important;
-    border: 1px solid #dde3ec !important;
-    border-radius: 10px !important;
+    border: 1px solid #d0d9e6 !important;
+    border-radius: 12px !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-shadow: 0 2px 8px rgba(30,58,95,0.07) !important;
 }
-
-/* Labels */
-label > span, .gr-label {
-    font-size: 0.82em !important;
-    font-weight: 600 !important;
+/* Strip borders from every nested block INSIDE form-col */
+.form-col .block,
+.form-col .gr-form,
+.form-col .gr-box,
+.form-col .gr-panel,
+.form-col > div > .block {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+/* Input / textarea backgrounds — soft blue-white */
+.form-col input[type=number],
+.form-col input[type=text],
+.form-col textarea {
+    background: #f4f7fb !important;
+    border: 1.5px solid #d0d9e6 !important;
+    border-radius: 8px !important;
+    color: #1e3a5f !important;
+    font-weight: 500 !important;
+    font-size: 0.97em !important;
+}
+.form-col input:focus,
+.form-col textarea:focus {
+    border-color: #2a5298 !important;
+    background: #ffffff !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(42,82,152,0.12) !important;
+}
+/* Dropdown selects */
+.form-col select,
+.form-col .wrap {
+    background: #f4f7fb !important;
+    border: 1.5px solid #d0d9e6 !important;
+    border-radius: 8px !important;
+    color: #1e3a5f !important;
+}
+/* Labels inside cards */
+.form-col label > span,
+.form-col .gr-label {
+    font-size: 0.78em !important;
+    font-weight: 700 !important;
     color: #374151 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
+    letter-spacing: 0.05em !important;
+}
+/* Info text */
+.form-col .info {
+    color: #6b7f9e !important;
+    font-size: 0.78em !important;
 }
 
-/* Primary button */
-button.primary {
-    background: #1e3a5f !important;
+/* ── Primary action button ── */
+button.primary, .btn-primary {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%) !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     font-weight: 700 !important;
-    font-size: 1.0em !important;
-    padding: 14px 28px !important;
+    font-size: 1.05em !important;
+    padding: 15px 32px !important;
     letter-spacing: 0.02em !important;
+    box-shadow: 0 3px 12px rgba(30,58,95,0.30) !important;
+    transition: opacity 0.15s !important;
 }
-button.primary:hover {
-    background: #16304f !important;
-}
+button.primary:hover { opacity: 0.9 !important; }
 
-/* Secondary button */
+/* ── Secondary button ── */
 button.secondary {
     border: 1.5px solid #1e3a5f !important;
     color: #1e3a5f !important;
+    background: #ffffff !important;
     font-weight: 600 !important;
     border-radius: 8px !important;
 }
+button.secondary:hover { background: #f0f4f8 !important; }
 
-/* Sliders accent */
-input[type=range]::-webkit-slider-thumb { background: #1e3a5f !important; }
+/* ── Sliders ── */
+input[type=range] { accent-color: #1e3a5f !important; }
+.form-col .wrap.svelte-1kg2f5a { background: #f4f7fb !important; }
 """
 
 EMPTY_RESULT = """
@@ -914,7 +999,7 @@ EMPTY_RESULT = """
 
 with gr.Blocks(
     title="Credit Risk Predictor — Microfinance",
-    theme=gr.themes.Base(
+    theme=gr.themes.Soft(
         primary_hue="blue",
         neutral_hue="slate",
         font=gr.themes.GoogleFont("Inter"),
@@ -924,15 +1009,21 @@ with gr.Blocks(
 
     lang_state = gr.State("en")
 
-    header_html = gr.HTML(_header_html("en"))
+    # ── Top bar: header + language toggle ──────────────────────────────────────
+    with gr.Row(elem_classes=["lang-row"]):
+        header_html = gr.HTML(_header_html("en"), scale=10)
+        with gr.Column(scale=0, min_width=140, elem_classes=["lang-toggle-col"]):
+            with gr.Row(elem_classes=["lang-row"]):
+                lang_en_btn = gr.Button("ENG", elem_classes=["lang-btn", "lang-active"],  scale=1)
+                lang_es_btn = gr.Button("SPA", elem_classes=["lang-btn", "lang-inactive"], scale=1)
 
-    with gr.Tabs() as tabs:
+    with gr.Tabs():
 
         # ── Tab 1: Evaluate ────────────────────────────────────────────────────
-        with gr.Tab("Evaluate Application", id="tab_eval") as tab_eval:
+        with gr.Tab("Evaluate Application", id="tab_eval"):
             with gr.Row(equal_height=False):
 
-                with gr.Column(scale=1):
+                with gr.Column(scale=1, elem_classes=["form-col"]):
                     sec_fin = gr.HTML(_sec_html("en", "sec_financial"))
                     ingreso_in = gr.Number(
                         value=1_800_000,
@@ -953,13 +1044,13 @@ with gr.Blocks(
                         label=T["en"]["lbl_historial"],
                         info=T["en"]["inf_historial"])
 
-                with gr.Column(scale=1):
+                with gr.Column(scale=1, elem_classes=["form-col"]):
                     sec_prof = gr.HTML(_sec_html("en", "sec_profile"))
                     edad_in       = gr.Slider(20, 70, value=38, step=1, label=T["en"]["lbl_edad"])
                     num_dep_in    = gr.Slider(0, 6, value=2, step=1,   label=T["en"]["lbl_dep"])
                     antiguedad_in = gr.Slider(0, 25, value=3, step=1,  label=T["en"]["lbl_antiguedad"])
                     genero_in  = gr.Dropdown(choices=CHOICES["en"]["genero"],
-                                             value="femenino",   label=T["en"]["lbl_genero"])
+                                             value="femenino",    label=T["en"]["lbl_genero"])
                     civil_in   = gr.Dropdown(choices=CHOICES["en"]["civil"],
                                              value="unión libre", label=T["en"]["lbl_civil"])
                     educ_in    = gr.Dropdown(choices=CHOICES["en"]["educ"],
@@ -969,16 +1060,16 @@ with gr.Blocks(
                     resp_in    = gr.Dropdown(choices=CHOICES["en"]["yesno"],
                                              value="si",          label=T["en"]["lbl_resp"])
 
-                with gr.Column(scale=1):
+                with gr.Column(scale=1, elem_classes=["form-col"]):
                     sec_loc = gr.HTML(_sec_html("en", "sec_location"))
                     sector_in    = gr.Dropdown(choices=CHOICES["en"]["sector"],
-                                               value="urbano",            label=T["en"]["lbl_sector"])
+                                               value="urbano",             label=T["en"]["lbl_sector"])
                     regional_in  = gr.Dropdown(choices=CHOICES["en"]["regional"],
-                                               value="bogotá d.c.",       label=T["en"]["lbl_regional"])
+                                               value="bogotá d.c.",        label=T["en"]["lbl_regional"])
                     actividad_in = gr.Dropdown(choices=CHOICES["en"]["actividad"],
                                                value="comercio minorista", label=T["en"]["lbl_actividad"])
                     vivienda_in  = gr.Dropdown(choices=CHOICES["en"]["vivienda"],
-                                               value="propia sin deuda",  label=T["en"]["lbl_vivienda"])
+                                               value="propia sin deuda",   label=T["en"]["lbl_vivienda"])
 
             predict_btn = gr.Button(T["en"]["btn_predict"], variant="primary", size="lg")
             result_out  = gr.HTML(value=_empty_result("en"))
@@ -1002,7 +1093,7 @@ with gr.Blocks(
             )
 
         # ── Tab 2: Performance ─────────────────────────────────────────────────
-        with gr.Tab("Model Performance", id="tab_perf") as tab_perf:
+        with gr.Tab("Model Performance", id="tab_perf"):
             metrics_html = gr.HTML(_metrics_html("en"))
             with gr.Row():
                 cm_plot = gr.Plot(label="Confusion Matrix")
@@ -1018,86 +1109,49 @@ with gr.Blocks(
             )
 
         # ── Tab 3: Methodology ─────────────────────────────────────────────────
-        with gr.Tab("Methodology", id="tab_method") as tab_method:
+        with gr.Tab("Methodology", id="tab_method"):
             method_md = gr.Markdown(METHODOLOGY_LANG["en"])
 
-    # ── Language toggle (rendered via JS after mount) ──────────────────────────
-    gr.HTML("""
-    <script>
-    function setLangToggle() {
-        const container = document.getElementById('lang-toggle');
-        if (!container) { setTimeout(setLangToggle, 300); return; }
-        if (container.children.length > 0) return;
-        ['ENG','SPA'].forEach((lbl, i) => {
-            const btn = document.createElement('button');
-            btn.textContent = lbl;
-            btn.dataset.lang = i === 0 ? 'en' : 'es';
-            btn.style.cssText = `
-                padding: 7px 18px; border: none; cursor: pointer;
-                font-family: Inter, sans-serif; font-size: 0.82em;
-                font-weight: 700; letter-spacing: 0.05em;
-                background: ${i === 0 ? 'rgba(255,255,255,0.22)' : 'transparent'};
-                color: ${i === 0 ? '#ffffff' : 'rgba(255,255,255,0.5)'};
-                transition: all 0.15s;
-            `;
-            btn.onclick = () => {
-                document.querySelectorAll('#lang-toggle button').forEach(b => {
-                    b.style.background = 'transparent';
-                    b.style.color = 'rgba(255,255,255,0.5)';
-                });
-                btn.style.background = 'rgba(255,255,255,0.22)';
-                btn.style.color = '#ffffff';
-                // Trigger Gradio language state update
-                const hiddenBtn = document.getElementById('lang-' + btn.dataset.lang);
-                if (hiddenBtn) hiddenBtn.click();
-            };
-            container.appendChild(btn);
-        });
-    }
-    setLangToggle();
-    </script>
-    """)
-
-    # Hidden trigger buttons for language switching
-    with gr.Row(visible=False):
-        lang_en_btn = gr.Button("en", elem_id="lang-en")
-        lang_es_btn = gr.Button("es", elem_id="lang-es")
-
+    # ── Language switch logic ──────────────────────────────────────────────────
     def switch_lang(lang):
         t  = T[lang]
         ch = CHOICES[lang]
+        is_en = lang == "en"
         return (
             lang,
             _header_html(lang),
+            gr.update(elem_classes=["lang-btn", "lang-active"   if is_en  else "lang-inactive"]),
+            gr.update(elem_classes=["lang-btn", "lang-inactive" if is_en  else "lang-active"]),
             _sec_html(lang, "sec_financial"),
             _sec_html(lang, "sec_profile"),
             _sec_html(lang, "sec_location"),
-            gr.update(label=t["lbl_ingreso"],   info=t["inf_ingreso"]),
-            gr.update(label=t["lbl_monto"],      info=t["inf_monto"]),
+            gr.update(label=t["lbl_ingreso"],    info=t["inf_ingreso"]),
+            gr.update(label=t["lbl_monto"],       info=t["inf_monto"]),
             gr.update(label=t["lbl_cuotas"]),
             gr.update(label=t["lbl_tasa"]),
-            gr.update(label=t["lbl_historial"],  info=t["inf_historial"], choices=ch["historial"]),
+            gr.update(label=t["lbl_historial"],   info=t["inf_historial"], choices=ch["historial"]),
             gr.update(label=t["lbl_edad"]),
             gr.update(label=t["lbl_dep"]),
             gr.update(label=t["lbl_antiguedad"]),
-            gr.update(label=t["lbl_genero"],     choices=ch["genero"]),
-            gr.update(label=t["lbl_civil"],      choices=ch["civil"]),
-            gr.update(label=t["lbl_educ"],       choices=ch["educ"]),
-            gr.update(label=t["lbl_mujer"],      choices=ch["yesno"]),
-            gr.update(label=t["lbl_resp"],       choices=ch["yesno"]),
-            gr.update(label=t["lbl_sector"],     choices=ch["sector"]),
-            gr.update(label=t["lbl_regional"],   choices=ch["regional"]),
-            gr.update(label=t["lbl_actividad"],  choices=ch["actividad"]),
-            gr.update(label=t["lbl_vivienda"],   choices=ch["vivienda"]),
+            gr.update(label=t["lbl_genero"],      choices=ch["genero"]),
+            gr.update(label=t["lbl_civil"],       choices=ch["civil"]),
+            gr.update(label=t["lbl_educ"],        choices=ch["educ"]),
+            gr.update(label=t["lbl_mujer"],       choices=ch["yesno"]),
+            gr.update(label=t["lbl_resp"],        choices=ch["yesno"]),
+            gr.update(label=t["lbl_sector"],      choices=ch["sector"]),
+            gr.update(label=t["lbl_regional"],    choices=ch["regional"]),
+            gr.update(label=t["lbl_actividad"],   choices=ch["actividad"]),
+            gr.update(label=t["lbl_vivienda"],    choices=ch["vivienda"]),
             gr.update(value=t["btn_predict"]),
             _empty_result(lang),
             _metrics_html(lang),
             gr.update(value=t["btn_charts"]),
-            gr.Markdown(METHODOLOGY_LANG[lang]),
+            METHODOLOGY_LANG[lang],
         )
 
     lang_outputs = [
         lang_state, header_html,
+        lang_en_btn, lang_es_btn,
         sec_fin, sec_prof, sec_loc,
         ingreso_in, monto_in, cuotas_in, tasa_in, historial_in,
         edad_in, num_dep_in, antiguedad_in,
