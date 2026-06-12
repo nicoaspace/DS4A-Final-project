@@ -800,11 +800,16 @@ CSS = """
 *, body, .gradio-container {
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
 }
-body, .gradio-container, .main, .app {
-    background: #eef2f7 !important;
+/* ── Global light background ── */
+body, .gradio-container, .main, .app,
+.block, .gr-panel, .gr-box, .gr-form,
+.tabs, .tab-content, .tabitem,
+.svelte-phx28p, [class*="panel"] {
+    background: #f5f7fa !important;
+    color: #0f172a !important;
 }
 .gradio-container {
-    max-width: 1520px !important;
+    max-width: 1800px !important;
     margin: 0 auto !important;
     padding: 16px !important;
 }
@@ -889,20 +894,34 @@ footer { display: none !important; }
     font-weight: 700 !important;
 }
 
+/* ── 3-column row: never wrap ── */
+.form-row {
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+    align-items: flex-start !important;
+}
+.form-row > * {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+}
+
 /* ── Form columns (section cards) ── */
 .form-col {
     background: #ffffff !important;
     border: 1px solid #d0d9e6 !important;
     border-radius: 12px !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     box-shadow: 0 2px 8px rgba(30,58,95,0.07) !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
 }
-/* Strip borders from every nested block INSIDE form-col */
+/* Strip ALL inner borders/backgrounds */
 .form-col .block,
 .form-col .gr-form,
 .form-col .gr-box,
 .form-col .gr-panel,
+.form-col > div,
 .form-col > div > .block {
     border: none !important;
     box-shadow: none !important;
@@ -911,45 +930,68 @@ footer { display: none !important; }
     padding-top: 4px !important;
     padding-bottom: 4px !important;
 }
-/* Input / textarea backgrounds — soft blue-white */
+/* ── Input / Number / Textarea ── */
 .form-col input[type=number],
 .form-col input[type=text],
 .form-col textarea {
-    background: #f4f7fb !important;
-    border: 1.5px solid #d0d9e6 !important;
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
     border-radius: 8px !important;
-    color: #1e3a5f !important;
+    color: #0f172a !important;
     font-weight: 500 !important;
     font-size: 0.97em !important;
 }
 .form-col input:focus,
 .form-col textarea:focus {
-    border-color: #2a5298 !important;
+    border-color: #1e3a5f !important;
     background: #ffffff !important;
     outline: none !important;
-    box-shadow: 0 0 0 3px rgba(42,82,152,0.12) !important;
+    box-shadow: 0 0 0 3px rgba(30,58,95,0.10) !important;
 }
-/* Dropdown selects */
+/* ── Dropdowns ── */
+.form-col .wrap,
 .form-col select,
-.form-col .wrap {
-    background: #f4f7fb !important;
-    border: 1.5px solid #d0d9e6 !important;
+.form-col ul {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
     border-radius: 8px !important;
-    color: #1e3a5f !important;
+    color: #0f172a !important;
 }
-/* Labels inside cards */
+/* ── Label badge pills — match section header ── */
 .form-col label > span,
-.form-col .gr-label {
-    font-size: 0.78em !important;
+.form-col .label-wrap span,
+.form-col .gr-label,
+.form-col span.svelte-1gfkn6j {
+    background: #1e3a5f !important;
+    color: #ffffff !important;
+    font-size: 0.76em !important;
     font-weight: 700 !important;
-    color: #374151 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.06em !important;
+    border-radius: 5px !important;
+    padding: 2px 8px !important;
 }
-/* Info text */
-.form-col .info {
-    color: #6b7f9e !important;
+/* ── Info/hint text ── */
+.form-col .info, .form-col .description {
+    color: #64748b !important;
     font-size: 0.78em !important;
+    background: transparent !important;
+}
+/* ── Sliders: track + thumb match dark blue ── */
+.form-col input[type=range] {
+    accent-color: #1e3a5f !important;
+}
+.form-col .wrap.svelte-1kg2f5a,
+.form-col [data-testid="block"] {
+    background: transparent !important;
+}
+/* Slider number box */
+.form-col input[type=number].svelte-1b3bq2o {
+    background: #1e3a5f !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
 }
 
 /* ── Primary action button (centered, fixed width) ── */
@@ -1010,9 +1052,9 @@ EMPTY_RESULT = """
 
 with gr.Blocks(
     title="Credit Risk Predictor — Microfinance",
-    theme=gr.themes.Soft(
+    theme=gr.themes.Default(
         primary_hue="blue",
-        neutral_hue="slate",
+        neutral_hue="gray",
         font=gr.themes.GoogleFont("Inter"),
     ),
     css=CSS,
@@ -1033,7 +1075,7 @@ with gr.Blocks(
 
         # ── Tab 1: Evaluate ────────────────────────────────────────────────────
         with gr.Tab("Evaluate Application", id="tab_eval"):
-            with gr.Row(equal_height=False):
+            with gr.Row(equal_height=False, elem_classes=["form-row"]):
 
                 with gr.Column(scale=1, elem_classes=["form-col"]):
                     sec_fin = gr.HTML(_sec_html("en", "sec_financial"))
