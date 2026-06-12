@@ -418,7 +418,7 @@ def predict_risk(
     lbl_install   = "installments"                if is_en else "cuotas"
 
     html = f"""
-<div style="font-family:'Inter','Segoe UI',system-ui,sans-serif;margin-top:8px;">
+<div style="font-family:'Inter','Segoe UI',system-ui,sans-serif;margin-top:8px;color:#0f172a;">
 
   <div style="background:{bg};border:2px solid {color};border-left:6px solid {color};
     border-radius:12px;padding:20px 24px;margin-bottom:16px;">
@@ -447,11 +447,11 @@ def predict_risk(
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;">
 
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
-      <div style="font-size:0.72em;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+    <div style="background:#ffffff;border:1px solid #d0d9e6;border-radius:10px;padding:16px;">
+      <div style="font-size:0.72em;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
         {lbl_monthly}</div>
       <div style="font-size:1.30em;font-weight:800;color:#0f172a;">${cuota_est:,.0f}</div>
-      <div style="font-size:0.78em;color:#64748b;margin-top:2px;">{lbl_amort}</div>
+      <div style="font-size:0.78em;color:#475569;margin-top:2px;">{lbl_amort}</div>
     </div>
 
     <div style="background:{rci_bg};border:1px solid {rci_color}40;border-radius:10px;padding:16px;">
@@ -468,21 +468,21 @@ def predict_risk(
       <div style="font-size:0.78em;color:{cap_color};margin-top:2px;">{cap_icon} {cap_label}</div>
     </div>
 
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
-      <div style="font-size:0.72em;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+    <div style="background:#ffffff;border:1px solid #d0d9e6;border-radius:10px;padding:16px;">
+      <div style="font-size:0.72em;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
         {lbl_term}</div>
       <div style="font-size:1.30em;font-weight:800;color:#0f172a;">{int(cuotas)} {lbl_install}</div>
-      <div style="font-size:0.78em;color:#64748b;margin-top:2px;">{tasa*100:.2f}% {lbl_rate}</div>
+      <div style="font-size:0.78em;color:#475569;margin-top:2px;">{tasa*100:.2f}% {lbl_rate}</div>
     </div>
 
   </div>
 
-  <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;padding:12px 18px;
-    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
-    font-size:0.88em;color:#475569;">
-    <span><b>{lbl_total}</b> ${cuota_est * int(cuotas):,.0f} COP</span>
-    <span><b>{lbl_finance}</b> ${cuota_est * int(cuotas) - monto:,.0f} COP ({(cuota_est * int(cuotas) / monto - 1)*100:.1f}%)</span>
-    <span><b>{lbl_capital}</b> ${monto:,.0f} COP</span>
+  <div style="background:#e8edf4;border:1px solid #b8c8dc;border-radius:10px;padding:14px 20px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    font-size:0.88em;color:#1e3a5f !important;">
+    <span style="color:#1e3a5f !important;"><b>{lbl_total}</b>&nbsp; ${cuota_est * int(cuotas):,.0f} COP</span>
+    <span style="color:#1e3a5f !important;"><b>{lbl_finance}</b>&nbsp; ${cuota_est * int(cuotas) - monto:,.0f} COP ({(cuota_est * int(cuotas) / monto - 1)*100:.1f}%)</span>
+    <span style="color:#1e3a5f !important;"><b>{lbl_capital}</b>&nbsp; ${monto:,.0f} COP</span>
   </div>
 
 </div>
@@ -1231,7 +1231,10 @@ with gr.Blocks(
                 rci_plot    = gr.Plot(label="PTI & Credit History")
                 income_plot = gr.Plot(label="Income vs Default")
 
-            load_btn = gr.Button(T["en"]["btn_charts"], variant="secondary")
+            gr.HTML("<div style='height:8px;'></div>")
+            with gr.Row(elem_classes=["predict-row"]):
+                with gr.Column(scale=0, elem_classes=["predict-btn-col"]):
+                    load_btn = gr.Button(T["en"]["btn_charts"], variant="primary", size="lg")
             load_btn.click(
                 lambda: (_cm_fig(), _fi_fig(), _rci_fig(), _income_fig()),
                 outputs=[cm_plot, fi_plot, rci_plot, income_plot],
