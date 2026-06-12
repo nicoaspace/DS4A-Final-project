@@ -977,11 +977,57 @@ footer { display: none !important; }
     font-size: 0.78em !important;
     background: transparent !important;
 }
+
+/* ── Dropdown: selected value text ── */
+.form-col .wrap span,
+.form-col .wrap input,
+.form-col .wrap > span,
+.form-col [data-testid="dropdown"] span,
+.form-col select option {
+    color: #0f172a !important;
+    background: transparent !important;
+}
+/* The displayed text inside closed dropdown */
+.form-col .wrap {
+    color: #0f172a !important;
+}
+
+/* ── Dropdown OPEN list panel ── */
+.form-col ul,
+.form-col .options,
+.form-col [role="listbox"],
+.form-col [data-testid="dropdown-options"] {
+    background: #ffffff !important;
+    border: 1px solid #d0d9e6 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(30,58,95,0.12) !important;
+}
+.form-col ul li,
+.form-col [role="option"],
+.form-col .options > * {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    padding: 8px 14px !important;
+}
+.form-col ul li:hover,
+.form-col [role="option"]:hover,
+.form-col ul li.selected,
+.form-col [role="option"][aria-selected="true"] {
+    background: #eef2f7 !important;
+    color: #1e3a5f !important;
+}
+
+/* ── Placeholder text ── */
+.form-col input::placeholder,
+.form-col textarea::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1 !important;
+}
+
 /* ── Sliders: track + thumb match dark blue ── */
 .form-col input[type=range] {
     accent-color: #1e3a5f !important;
 }
-.form-col .wrap.svelte-1kg2f5a,
 .form-col [data-testid="block"] {
     background: transparent !important;
 }
@@ -992,6 +1038,15 @@ footer { display: none !important; }
     border: none !important;
     border-radius: 6px !important;
     font-weight: 700 !important;
+}
+
+/* ── Any remaining dark overrides from theme ── */
+.form-col * {
+    --input-text-size: 0.95em;
+    --color-background-primary: #ffffff;
+}
+.form-col svg, .form-col .icon {
+    color: #1e3a5f !important;
 }
 
 /* ── Primary action button (centered, fixed width) ── */
@@ -1029,9 +1084,25 @@ button.secondary {
 }
 button.secondary:hover { background: #f0f4f8 !important; }
 
-/* ── Sliders ── */
+/* ── Sliders global ── */
 input[type=range] { accent-color: #1e3a5f !important; }
-.form-col .wrap.svelte-1kg2f5a { background: #f4f7fb !important; }
+
+/* ── Global dropdown list (renders outside column in some Gradio versions) ── */
+ul.options, [role="listbox"],
+.dropdown-content, .svelte-select-list {
+    background: #ffffff !important;
+    border: 1px solid #d0d9e6 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(30,58,95,0.12) !important;
+}
+ul.options li, [role="option"] {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+ul.options li:hover, [role="option"]:hover {
+    background: #eef2f7 !important;
+    color: #1e3a5f !important;
+}
 """
 
 EMPTY_RESULT = """
