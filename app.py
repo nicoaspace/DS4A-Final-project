@@ -1022,7 +1022,8 @@ with gr.Blocks(
 
     # ── Top bar: header + language toggle ──────────────────────────────────────
     with gr.Row(elem_classes=["lang-row"]):
-        header_html = gr.HTML(_header_html("en"), scale=10)
+        with gr.Column(scale=10):
+            header_html = gr.HTML(_header_html("en"))
         with gr.Column(scale=0, min_width=140, elem_classes=["lang-toggle-col"]):
             with gr.Row(elem_classes=["lang-row"]):
                 lang_en_btn = gr.Button("ENG", elem_classes=["lang-btn", "lang-active"],  scale=1)
