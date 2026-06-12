@@ -616,9 +616,9 @@ def _header_html(lang):
     t = T[lang]
     return f"""
 <div class="app-header">
-  <div style="font-size:1.55em;font-weight:800;margin-bottom:6px;letter-spacing:-0.02em;">{t['header_title']}</div>
-  <div style="font-size:0.90em;opacity:0.70;font-weight:400;">{t['header_sub']}</div>
-  <div style="margin-top:10px;font-size:0.82em;opacity:0.55;max-width:740px;line-height:1.5;">{t['header_desc']}</div>
+  <div style="font-size:1.55em;font-weight:800;margin-bottom:6px;letter-spacing:-0.02em;color:#ffffff;">{t['header_title']}</div>
+  <div style="font-size:0.90em;opacity:0.85;font-weight:400;color:#ffffff;">{t['header_sub']}</div>
+  <div style="margin-top:10px;font-size:0.82em;opacity:0.75;max-width:740px;line-height:1.5;color:#ffffff;">{t['header_desc']}</div>
 </div>"""
 
 def _sec_html(lang, key):
@@ -822,14 +822,20 @@ body, .gradio-container, .main, .app,
 }
 footer { display: none !important; }
 
-/* ── Header ── */
+/* ── Header (force white text — overrides global dark color rule) ── */
 .app-header {
-    background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+    background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%) !important;
     border-radius: 14px;
     padding: 28px 36px;
     margin-bottom: 0;
-    color: white;
+    color: #ffffff !important;
     box-shadow: 0 4px 20px rgba(30,58,95,0.25);
+}
+.app-header,
+.app-header *,
+.app-header div {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
 }
 
 /* ── Language toggle row ── */
@@ -867,6 +873,11 @@ footer { display: none !important; }
 }
 
 /* ── Tabs (Gradio 5 compatible selectors) ── */
+.tab-wrapper {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
 .tab-nav,
 .tab-container,
 [role="tablist"] {
@@ -874,9 +885,13 @@ footer { display: none !important; }
     border-radius: 10px !important;
     padding: 5px !important;
     border: 1px solid #d0d9e6 !important;
-    gap: 4px !important;
-    margin-bottom: 20px !important;
+    gap: 6px !important;
+    margin: 0 auto 20px auto !important;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+    display: flex !important;
+    justify-content: center !important;
+    width: fit-content !important;
+    max-width: 100% !important;
 }
 /* All tab buttons — inactive state */
 .tab-nav button,
@@ -886,7 +901,8 @@ footer { display: none !important; }
 #tab-eval-button,
 #tab-perf-button,
 #tab-method-button {
-    flex: 1 !important;
+    flex: 0 0 auto !important;
+    min-width: 200px !important;
     background: transparent !important;
     border: none !important;
     border-radius: 8px !important;
