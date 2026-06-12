@@ -876,22 +876,22 @@ footer { display: none !important; }
     border: none !important;
     border-radius: 8px !important;
     padding: 14px 24px !important;
-    font-size: 1.0em !important;
-    font-weight: 600 !important;
-    color: #64748b !important;
+    font-size: 1.05em !important;
+    font-weight: 700 !important;
+    color: #1e3a5f !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
     letter-spacing: 0.01em !important;
 }
 .tabs > .tab-nav > button:hover {
-    background: #f1f5f9 !important;
+    background: #dde6f0 !important;
     color: #1e3a5f !important;
 }
 .tabs > .tab-nav > button.selected {
     background: #1e3a5f !important;
     color: #ffffff !important;
     box-shadow: 0 2px 10px rgba(30,58,95,0.30) !important;
-    font-weight: 700 !important;
+    font-weight: 800 !important;
 }
 
 /* ── 3-column row: never wrap ── */
@@ -1086,6 +1086,55 @@ button.secondary:hover { background: #f0f4f8 !important; }
 
 /* ── Sliders global ── */
 input[type=range] { accent-color: #1e3a5f !important; }
+
+/* ── Markdown / Methodology tab text ── */
+.prose, .markdown, .md,
+[data-testid="markdown"],
+.gr-markdown,
+.tabitem .prose,
+.tabitem .markdown {
+    color: #1e3a5f !important;
+}
+.prose p, .prose li, .prose td, .prose th,
+.prose h1, .prose h2, .prose h3, .prose h4,
+.prose strong, .prose em, .prose code,
+.markdown p, .markdown li, .markdown td, .markdown th,
+.markdown h1, .markdown h2, .markdown h3,
+.markdown strong, .markdown a {
+    color: #1e3a5f !important;
+}
+.prose table, .markdown table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+.prose th, .markdown th {
+    background: #1e3a5f !important;
+    color: #ffffff !important;
+    padding: 8px 14px !important;
+    font-size: 0.85em !important;
+}
+.prose td, .markdown td {
+    padding: 7px 14px !important;
+    border-bottom: 1px solid #d0d9e6 !important;
+    color: #1e3a5f !important;
+    background: #ffffff !important;
+}
+.prose tr:nth-child(even) td, .markdown tr:nth-child(even) td {
+    background: #f0f4f8 !important;
+}
+.prose blockquote, .markdown blockquote {
+    border-left: 3px solid #1e3a5f !important;
+    color: #475569 !important;
+    background: #f0f4f8 !important;
+    padding: 8px 16px !important;
+    border-radius: 0 6px 6px 0 !important;
+}
+.prose code, .markdown code {
+    background: #e8edf4 !important;
+    color: #1e3a5f !important;
+    border-radius: 4px !important;
+    padding: 1px 5px !important;
+}
 
 /* ── Global dropdown list (renders outside column in some Gradio versions) ── */
 ul.options, [role="listbox"],
