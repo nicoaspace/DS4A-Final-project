@@ -323,17 +323,29 @@ def _income_fig() -> plt.Figure:
     return fig
 
 
-# ── Risk tier config ───────────────────────────────────────────────────────────
-TIERS = [
-    (20,  "#16a34a", "#dcfce7", "#15803d", "RIESGO BAJO",
-     "Perfil sólido", "Aprobación recomendada"),
-    (40,  "#ca8a04", "#fef9c3", "#a16207", "RIESGO MODERADO",
-     "Revisar condiciones", "Solicitar aval o garantía adicional"),
-    (60,  "#ea580c", "#ffedd5", "#c2410c", "RIESGO ALTO",
-     "Riesgo elevado", "Requiere codeudor o garantía real"),
-    (101, "#dc2626", "#fee2e2", "#b91c1c", "RIESGO MUY ALTO",
-     "Perfil de alto riesgo", "No se recomienda el desembolso"),
-]
+# ── Risk tier config (by language) ─────────────────────────────────────────────
+TIERS = {
+    "en": [
+        (20,  "#16a34a", "#dcfce7", "#15803d", "LOW RISK",
+         "Strong profile", "Approval recommended"),
+        (40,  "#ca8a04", "#fef9c3", "#a16207", "MODERATE RISK",
+         "Review conditions", "Consider collateral or guarantor"),
+        (60,  "#ea580c", "#ffedd5", "#c2410c", "HIGH RISK",
+         "Elevated risk", "Requires co-signer or real guarantee"),
+        (101, "#dc2626", "#fee2e2", "#b91c1c", "VERY HIGH RISK",
+         "High-risk profile", "Disbursement not recommended"),
+    ],
+    "es": [
+        (20,  "#16a34a", "#dcfce7", "#15803d", "RIESGO BAJO",
+         "Perfil sólido", "Aprobación recomendada"),
+        (40,  "#ca8a04", "#fef9c3", "#a16207", "RIESGO MODERADO",
+         "Revisar condiciones", "Solicitar aval o garantía adicional"),
+        (60,  "#ea580c", "#ffedd5", "#c2410c", "RIESGO ALTO",
+         "Riesgo elevado", "Requiere codeudor o garantía real"),
+        (101, "#dc2626", "#fee2e2", "#b91c1c", "RIESGO MUY ALTO",
+         "Perfil de alto riesgo", "No se recomienda el desembolso"),
+    ],
+}
 
 
 def predict_risk(
@@ -342,6 +354,7 @@ def predict_risk(
     sector, regional, actividad, vivienda,
     estado_civil, genero, educ,
     mujer_cabeza, responsable_hogar, historial_crediticio,
+    lang="en",
 ):
     cuota_est = calcular_cuota(monto, tasa, int(cuotas))
     rci       = cuota_est / ingreso_mensual
@@ -365,169 +378,279 @@ def predict_risk(
     risk_pct = proba[1] * 100
 
     # Tier lookup
-    for limit, color, bg, dark, label, subtitle, action in TIERS:
+    for limit, color, bg, dark, label, subtitle, action in TIERS[lang]:
         if risk_pct < limit:
             break
 
     # ── RCI pill ───────────────────────────────────────────────────────────────
+    is_en = lang == "en"
     if rci > 0.50:
         rci_bg, rci_color, rci_icon = "#fee2e2", "#b91c1c", "⚠"
-        rci_note = "Supera umbral crítico"
+        rci_note = "Exceeds critical threshold" if is_en else "Supera umbral crítico"
     elif rci > 0.35:
         rci_bg, rci_color, rci_icon = "#ffedd5", "#c2410c", "⚠"
-        rci_note = "Supera umbral del 35%"
+        rci_note = "Exceeds 35% threshold" if is_en else "Supera umbral del 35%"
     elif rci > 0.25:
         rci_bg, rci_color, rci_icon = "#fef9c3", "#a16207", "●"
-        rci_note = "Zona de atención"
+        rci_note = "Caution zone" if is_en else "Zona de atención"
     else:
         rci_bg, rci_color, rci_icon = "#dcfce7", "#15803d", "✓"
-        rci_note = "Dentro del límite"
+        rci_note = "Within limit" if is_en else "Dentro del límite"
 
-    # ── Capacity pill ──────────────────────────────────────────────────────────
     cap_color = "#b91c1c" if capacidad < 0 else "#15803d"
     cap_bg    = "#fee2e2" if capacidad < 0 else "#dcfce7"
     cap_icon  = "↓" if capacidad < 0 else "↑"
+    cap_label = "COP / month available" if is_en else "COP / mes disponibles"
 
-    # ── Progress bar width ─────────────────────────────────────────────────────
     bar_w = min(risk_pct, 100)
 
-    html = f"""
-<div style="font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; margin-top: 8px;">
+    lbl_prob      = "Default probability"         if is_en else "Probabilidad de incumplimiento"
+    lbl_monthly   = "Estimated Monthly Payment"   if is_en else "Cuota Mensual Estimada"
+    lbl_amort     = "COP / month · French amort." if is_en else "COP / mes · Amort. francesa"
+    lbl_rci       = "Payment-to-Income Ratio"     if is_en else "Relación Cuota / Ingreso"
+    lbl_rci_thr   = "threshold 35%"               if is_en else "umbral 35%"
+    lbl_capacity  = "Net Payment Capacity"        if is_en else "Capacidad de Pago Neta"
+    lbl_term      = "Loan Term"                   if is_en else "Plazo Pactado"
+    lbl_rate      = "monthly N.A.M.V. rate"       if is_en else "tasa N.A.M.V. mensual"
+    lbl_total     = "Total loan cost:"            if is_en else "Costo total del crédito:"
+    lbl_finance   = "Financing cost:"             if is_en else "Costo financiero:"
+    lbl_capital   = "Requested amount:"           if is_en else "Monto solicitado:"
+    lbl_install   = "installments"                if is_en else "cuotas"
 
-  <!-- VERDICT CARD -->
-  <div style="
-    background: {bg};
-    border: 2px solid {color};
-    border-left: 6px solid {color};
-    border-radius: 12px;
-    padding: 20px 24px;
-    margin-bottom: 16px;
-  ">
-    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+    html = f"""
+<div style="font-family:'Inter','Segoe UI',system-ui,sans-serif;margin-top:8px;">
+
+  <div style="background:{bg};border:2px solid {color};border-left:6px solid {color};
+    border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div>
-        <div style="font-size:1.35em; font-weight:800; color:{dark}; letter-spacing:-0.02em;">
-          {label}
-        </div>
-        <div style="font-size:0.95em; color:{dark}; opacity:0.85; margin-top:2px;">
-          {subtitle} · {action}
-        </div>
+        <div style="font-size:1.35em;font-weight:800;color:{dark};letter-spacing:-0.02em;">{label}</div>
+        <div style="font-size:0.95em;color:{dark};opacity:0.85;margin-top:2px;">{subtitle} · {action}</div>
       </div>
-      <div style="
-        background: {dark};
-        color: white;
-        border-radius: 50px;
-        padding: 8px 20px;
-        font-size: 1.4em;
-        font-weight: 800;
-        white-space: nowrap;
-      ">
-        {risk_pct:.1f}% mora
+      <div style="background:{dark};color:white;border-radius:50px;padding:8px 20px;
+        font-size:1.4em;font-weight:800;white-space:nowrap;">
+        {risk_pct:.1f}%
       </div>
     </div>
-
-    <!-- Risk bar -->
     <div style="margin-top:16px;">
-      <div style="display:flex; justify-content:space-between; font-size:0.75em; color:{dark}; margin-bottom:4px;">
-        <span>Probabilidad de incumplimiento</span>
-        <span>{risk_pct:.1f}%</span>
+      <div style="display:flex;justify-content:space-between;font-size:0.75em;color:{dark};margin-bottom:4px;">
+        <span>{lbl_prob}</span><span>{risk_pct:.1f}%</span>
       </div>
-      <div style="background: rgba(0,0,0,0.10); border-radius:99px; height:10px; overflow:hidden;">
-        <div style="
-          width: {bar_w}%;
-          height: 100%;
-          background: {color};
-          border-radius: 99px;
-          transition: width 0.4s ease;
-        "></div>
+      <div style="background:rgba(0,0,0,0.10);border-radius:99px;height:10px;overflow:hidden;">
+        <div style="width:{bar_w}%;height:100%;background:{color};border-radius:99px;"></div>
       </div>
-      <div style="display:flex; justify-content:space-between; font-size:0.70em; color:{dark}; opacity:0.7; margin-top:3px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.70em;color:{dark};opacity:0.7;margin-top:3px;">
         <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
       </div>
     </div>
   </div>
 
-  <!-- METRICS GRID -->
-  <div style="
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 12px;
-  ">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;">
 
-    <!-- Cuota mensual -->
-    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
-      <div style="font-size:0.72em; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
-        Cuota Mensual Estimada
-      </div>
-      <div style="font-size:1.30em; font-weight:800; color:#0f172a;">
-        ${cuota_est:,.0f}
-      </div>
-      <div style="font-size:0.78em; color:#64748b; margin-top:2px;">COP / mes · Amort. francesa</div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+      <div style="font-size:0.72em;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+        {lbl_monthly}</div>
+      <div style="font-size:1.30em;font-weight:800;color:#0f172a;">${cuota_est:,.0f}</div>
+      <div style="font-size:0.78em;color:#64748b;margin-top:2px;">{lbl_amort}</div>
     </div>
 
-    <!-- RCI -->
-    <div style="background:{rci_bg}; border:1px solid {rci_color}40; border-radius:10px; padding:16px;">
-      <div style="font-size:0.72em; font-weight:600; color:{rci_color}; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
-        Relación Cuota / Ingreso
-      </div>
-      <div style="font-size:1.30em; font-weight:800; color:{rci_color};">
-        {rci*100:.1f}%
-      </div>
-      <div style="font-size:0.78em; color:{rci_color}; margin-top:2px;">
-        {rci_icon} {rci_note} · umbral 35%
-      </div>
+    <div style="background:{rci_bg};border:1px solid {rci_color}40;border-radius:10px;padding:16px;">
+      <div style="font-size:0.72em;font-weight:600;color:{rci_color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+        {lbl_rci}</div>
+      <div style="font-size:1.30em;font-weight:800;color:{rci_color};">{rci*100:.1f}%</div>
+      <div style="font-size:0.78em;color:{rci_color};margin-top:2px;">{rci_icon} {rci_note} · {lbl_rci_thr}</div>
     </div>
 
-    <!-- Capacidad neta -->
-    <div style="background:{cap_bg}; border:1px solid {cap_color}40; border-radius:10px; padding:16px;">
-      <div style="font-size:0.72em; font-weight:600; color:{cap_color}; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
-        Capacidad de Pago Neta
-      </div>
-      <div style="font-size:1.30em; font-weight:800; color:{cap_color};">
-        ${capacidad:,.0f}
-      </div>
-      <div style="font-size:0.78em; color:{cap_color}; margin-top:2px;">
-        {cap_icon} COP / mes disponibles
-      </div>
+    <div style="background:{cap_bg};border:1px solid {cap_color}40;border-radius:10px;padding:16px;">
+      <div style="font-size:0.72em;font-weight:600;color:{cap_color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+        {lbl_capacity}</div>
+      <div style="font-size:1.30em;font-weight:800;color:{cap_color};">${capacidad:,.0f}</div>
+      <div style="font-size:0.78em;color:{cap_color};margin-top:2px;">{cap_icon} {cap_label}</div>
     </div>
 
-    <!-- Plazo -->
-    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
-      <div style="font-size:0.72em; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
-        Plazo Pactado
-      </div>
-      <div style="font-size:1.30em; font-weight:800; color:#0f172a;">
-        {int(cuotas)} cuotas
-      </div>
-      <div style="font-size:0.78em; color:#64748b; margin-top:2px;">
-        Tasa {tasa*100:.2f}% N.A.M.V. mensual
-      </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+      <div style="font-size:0.72em;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+        {lbl_term}</div>
+      <div style="font-size:1.30em;font-weight:800;color:#0f172a;">{int(cuotas)} {lbl_install}</div>
+      <div style="font-size:0.78em;color:#64748b;margin-top:2px;">{tasa*100:.2f}% {lbl_rate}</div>
     </div>
 
   </div>
 
-  <!-- TOTAL COST ROW -->
-  <div style="
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    padding: 12px 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 0.88em;
-    color: #475569;
-  ">
-    <span><b>Costo total del crédito:</b> ${cuota_est * int(cuotas):,.0f} COP</span>
-    <span><b>Costo financiero:</b> ${cuota_est * int(cuotas) - monto:,.0f} COP ({(cuota_est * int(cuotas) / monto - 1)*100:.1f}% sobre el capital)</span>
-    <span><b>Monto solicitado:</b> ${monto:,.0f} COP</span>
+  <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;padding:12px 18px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+    font-size:0.88em;color:#475569;">
+    <span><b>{lbl_total}</b> ${cuota_est * int(cuotas):,.0f} COP</span>
+    <span><b>{lbl_finance}</b> ${cuota_est * int(cuotas) - monto:,.0f} COP ({(cuota_est * int(cuotas) / monto - 1)*100:.1f}%)</span>
+    <span><b>{lbl_capital}</b> ${monto:,.0f} COP</span>
   </div>
 
 </div>
 """
     return html
+
+
+# ── Translations ───────────────────────────────────────────────────────────────
+T = {
+    "en": {
+        "header_title": "Credit Risk Predictor",
+        "header_sub":   "Fundación Amanecer · DS4A Correlation One · Team 84",
+        "header_desc":  "Evaluates default risk for microcredit applications using Gradient Boosting "
+                        "trained on data calibrated to the real profile of Colombian microfinance clients.",
+        "sec_financial": "Financial Information",
+        "sec_profile":   "Applicant Profile",
+        "sec_location":  "Location &amp; Activity",
+        "tab_eval":   "Evaluate Application",
+        "tab_perf":   "Model Performance",
+        "tab_method": "Methodology",
+        "lbl_ingreso":    "Monthly net income (COP)",
+        "inf_ingreso":    "Regular income declared by the applicant",
+        "lbl_monto":      "Requested amount (COP)",
+        "inf_monto":      "Loan capital, excluding interest",
+        "lbl_cuotas":     "Number of installments",
+        "lbl_tasa":       "Monthly interest rate N.A.M.V.",
+        "lbl_historial":  "Credit history",
+        "inf_historial":  "DataCrédito / TransUnion",
+        "lbl_edad":       "Age (years)",
+        "lbl_dep":        "Dependents",
+        "lbl_antiguedad": "Work seniority (years)",
+        "lbl_genero":     "Gender",
+        "lbl_civil":      "Marital status",
+        "lbl_educ":       "Education level",
+        "lbl_mujer":      "Female head of household",
+        "lbl_resp":       "Primary household provider",
+        "lbl_sector":     "Sector",
+        "lbl_regional":   "Region",
+        "lbl_actividad":  "Economic activity",
+        "lbl_vivienda":   "Housing type",
+        "btn_predict":    "Evaluate Credit Risk",
+        "btn_charts":     "Load charts",
+        "empty_result":   "Complete the form and click <strong style='color:#1e3a5f;'>Evaluate Credit Risk</strong> to get the analysis.",
+        "load_note":      "Click 'Load charts' to render the performance charts.",
+        "metrics": ["Accuracy", "AUC-ROC", "Precision", "Recall", "F1-Score"],
+    },
+    "es": {
+        "header_title": "Predictor de Riesgo Crediticio",
+        "header_sub":   "Fundación Amanecer · DS4A Correlation One · Equipo 84",
+        "header_desc":  "Evalúa el riesgo de mora de solicitudes de microcrédito mediante Gradient Boosting "
+                        "entrenado con datos calibrados al perfil real de clientes colombianos.",
+        "sec_financial": "Información Financiera",
+        "sec_profile":   "Perfil del Solicitante",
+        "sec_location":  "Ubicación y Actividad",
+        "tab_eval":   "Evaluar Solicitud",
+        "tab_perf":   "Desempeño del Modelo",
+        "tab_method": "Metodología",
+        "lbl_ingreso":    "Ingreso mensual neto (COP)",
+        "inf_ingreso":    "Ingresos regulares declarados por el solicitante",
+        "lbl_monto":      "Monto solicitado (COP)",
+        "inf_monto":      "Capital del crédito, sin intereses",
+        "lbl_cuotas":     "Número de cuotas",
+        "lbl_tasa":       "Tasa mensual N.A.M.V.",
+        "lbl_historial":  "Historial crediticio",
+        "inf_historial":  "DataCrédito / TransUnion",
+        "lbl_edad":       "Edad (años)",
+        "lbl_dep":        "Personas a cargo",
+        "lbl_antiguedad": "Antigüedad laboral (años)",
+        "lbl_genero":     "Género",
+        "lbl_civil":      "Estado civil",
+        "lbl_educ":       "Nivel educativo",
+        "lbl_mujer":      "Mujer cabeza de hogar",
+        "lbl_resp":       "Responsable principal del hogar",
+        "lbl_sector":     "Sector",
+        "lbl_regional":   "Regional",
+        "lbl_actividad":  "Actividad económica",
+        "lbl_vivienda":   "Tipo de vivienda",
+        "btn_predict":    "Evaluar Riesgo Crediticio",
+        "btn_charts":     "Cargar gráficas",
+        "empty_result":   "Complete el formulario y haga clic en <strong style='color:#1e3a5f;'>Evaluar Riesgo Crediticio</strong> para obtener el análisis.",
+        "load_note":      "Haga clic en 'Cargar gráficas' para ver las métricas del modelo.",
+        "metrics": ["Accuracy", "AUC-ROC", "Precisión", "Recall", "F1-Score"],
+    },
+}
+
+# Dropdown choices: (display_label, model_value) — model always receives Spanish values
+CHOICES = {
+    "en": {
+        "historial":  [("Very good", "muy bueno"), ("Good", "bueno"), ("Fair", "regular"),
+                       ("No history", "sin historial"), ("Poor", "malo")],
+        "genero":     [("Female", "femenino"), ("Male", "masculino")],
+        "civil":      [("Married", "casado/a"), ("Single", "soltero/a"), ("Common-law", "unión libre"),
+                       ("Divorced", "divorciado/a"), ("Widowed", "viudo/a")],
+        "educ":       [("None", "ninguno"), ("Primary (incomplete)", "primaria incompleta"),
+                       ("Primary", "primaria completa"), ("Secondary", "secundaria"),
+                       ("Technical", "técnico/tecnólogo"), ("University", "universitario")],
+        "yesno":      [("Yes", "si"), ("No", "no")],
+        "sector":     [("Urban", "urbano"), ("Rural", "rural")],
+        "regional":   [("Bogotá D.C.", "bogotá d.c."), ("South Region", "región sur"),
+                       ("North Region", "región norte"), ("East Region", "región oriente"),
+                       ("West Region", "región occidente")],
+        "actividad":  [("Retail trade", "comercio minorista"), ("Agriculture", "agropecuario"),
+                       ("Personal services", "servicios personales"), ("Craft industry", "industria artesanal"),
+                       ("Construction", "construcción"), ("Transport", "transporte"), ("Other", "otro")],
+        "vivienda":   [("Owned (no mortgage)", "propia sin deuda"), ("Owned (with mortgage)", "propia con hipoteca"),
+                       ("Rented", "arrendada"), ("Family housing", "familiar")],
+    },
+    "es": {
+        "historial":  [("Muy bueno", "muy bueno"), ("Bueno", "bueno"), ("Regular", "regular"),
+                       ("Sin historial", "sin historial"), ("Malo", "malo")],
+        "genero":     [("Femenino", "femenino"), ("Masculino", "masculino")],
+        "civil":      [("Casado/a", "casado/a"), ("Soltero/a", "soltero/a"), ("Unión libre", "unión libre"),
+                       ("Divorciado/a", "divorciado/a"), ("Viudo/a", "viudo/a")],
+        "educ":       [("Ninguno", "ninguno"), ("Primaria incompleta", "primaria incompleta"),
+                       ("Primaria completa", "primaria completa"), ("Secundaria", "secundaria"),
+                       ("Técnico/tecnólogo", "técnico/tecnólogo"), ("Universitario", "universitario")],
+        "yesno":      [("Sí", "si"), ("No", "no")],
+        "sector":     [("Urbano", "urbano"), ("Rural", "rural")],
+        "regional":   [("Bogotá D.C.", "bogotá d.c."), ("Región Sur", "región sur"),
+                       ("Región Norte", "región norte"), ("Región Oriente", "región oriente"),
+                       ("Región Occidente", "región occidente")],
+        "actividad":  [("Comercio minorista", "comercio minorista"), ("Agropecuario", "agropecuario"),
+                       ("Servicios personales", "servicios personales"), ("Industria artesanal", "industria artesanal"),
+                       ("Construcción", "construcción"), ("Transporte", "transporte"), ("Otro", "otro")],
+        "vivienda":   [("Propia sin deuda", "propia sin deuda"), ("Propia con hipoteca", "propia con hipoteca"),
+                       ("Arrendada", "arrendada"), ("Familiar", "familiar")],
+    },
+}
+
+def _header_html(lang):
+    t = T[lang]
+    return f"""
+<div class="app-header">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:1.5em;font-weight:800;margin-bottom:4px;letter-spacing:-0.02em;">{t['header_title']}</div>
+      <div style="font-size:0.92em;opacity:0.75;font-weight:400;">{t['header_sub']}</div>
+      <div style="margin-top:10px;font-size:0.83em;opacity:0.60;max-width:700px;">{t['header_desc']}</div>
+    </div>
+    <div id="lang-toggle" style="display:flex;gap:0;border-radius:8px;overflow:hidden;
+      border:1.5px solid rgba(255,255,255,0.35);align-self:flex-start;margin-top:4px;flex-shrink:0;">
+    </div>
+  </div>
+</div>"""
+
+def _sec_html(lang, key):
+    return (f"<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
+            f"letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>{T[lang][key]}</div>")
+
+def _empty_result(lang):
+    return f"<div style='background:#ffffff;border:1px solid #dde3ec;border-radius:10px;" \
+           f"padding:40px 24px;text-align:center;color:#94a3b8;font-family:Inter,sans-serif;" \
+           f"font-size:0.95em;'>{T[lang]['empty_result']}</div>"
+
+def _metrics_html(lang):
+    names = T[lang]["metrics"]
+    vals  = [f"{METRICS['accuracy']:.2%}", f"{METRICS['auc']:.3f}",
+             f"{METRICS['precision']:.2%}", f"{METRICS['recall']:.2%}", f"{METRICS['f1']:.2%}"]
+    cards = "".join(
+        f'<div style="background:#ffffff;border:1px solid #dde3ec;border-radius:10px;'
+        f'padding:16px;text-align:center;">'
+        f'<div style="font-size:0.72em;font-weight:700;text-transform:uppercase;'
+        f'letter-spacing:0.06em;color:#64748b;margin-bottom:6px;">{n}</div>'
+        f'<div style="font-size:1.5em;font-weight:800;color:#1e3a5f;">{v}</div>'
+        f'</div>'
+        for n, v in zip(names, vals)
+    )
+    return f'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0;">{cards}</div>'
 
 
 # ── Gradio UI ──────────────────────────────────────────────────────────────────
@@ -578,6 +701,101 @@ METHODOLOGY = f"""
 > Los datos de entrenamiento son sintéticos, calibrados al perfil de clientes de microfinanzas colombianas.
 > El modelo original fue entrenado con datos reales de Fundación Amanecer, los cuales son de uso privado.
 """
+
+METHODOLOGY_LANG = {
+    "en": f"""
+## Model Methodology
+
+### Model variables
+
+| Variable | Description | Relevance |
+|----------|-------------|-----------|
+| **PTI** — Payment-to-Income Ratio | Estimated monthly payment ÷ Monthly income | High |
+| **Monthly income** | Net income declared by applicant (COP) | High |
+| **Loan amount** | Requested capital (COP) | High |
+| **Credit history** | Prior behavior in credit bureaus | High |
+| **Interest rate** | Monthly N.A.M.V. rate agreed | Medium |
+| **Loan term** | Number of installments agreed | Medium |
+| **Work seniority** | Years at current job | Medium |
+| **Age** | Applicant's age | Medium |
+| **Dependents** | Number of economic dependents | Medium |
+
+### Alert thresholds — PTI (Payment-to-Income)
+
+| PTI | Status | Suggested action |
+|-----|--------|-----------------|
+| Below 25% | Low risk | Direct approval |
+| 25% – 35% | Caution | Standard analysis |
+| 35% – 50% | High risk | Require collateral or co-signer |
+| Above 50% | Critical risk | Deny or restructure |
+
+### Algorithm
+
+- **Gradient Boosting (GBM)** — 150 trees, depth 4, learning rate 0.10
+- **Preprocessing:** StandardScaler (numerical) + OneHotEncoding (categorical)
+- **Validation:** Stratified 80/20 split
+
+### Model metrics on test set
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | {METRICS['accuracy']:.2%} |
+| AUC-ROC | {METRICS['auc']:.3f} |
+| Precision | {METRICS['precision']:.2%} |
+| Recall | {METRICS['recall']:.2%} |
+| F1-Score | {METRICS['f1']:.2%} |
+| Test samples | {len(X_test):,} |
+
+> Training data is synthetic, calibrated to the profile of Colombian microfinance clients.
+> The original model was trained on proprietary data from Fundación Amanecer.
+""",
+    "es": f"""
+## Metodología del Modelo
+
+### Variables del modelo
+
+| Variable | Descripción | Relevancia |
+|----------|-------------|------------|
+| **RCI** — Relación Cuota/Ingreso | Cuota mensual estimada ÷ Ingreso mensual | Alta |
+| **Ingreso mensual** | Ingresos netos declarados (COP) | Alta |
+| **Monto del crédito** | Capital solicitado (COP) | Alta |
+| **Historial crediticio** | Comportamiento previo en centrales de riesgo | Alta |
+| **Tasa de interés** | Tasa N.A.M.V. mensual pactada | Media |
+| **Plazo** | Número de cuotas pactadas | Media |
+| **Antigüedad laboral** | Años en el trabajo actual | Media |
+| **Edad** | Años cumplidos del solicitante | Media |
+| **Personas a cargo** | Número de dependientes económicos | Media |
+
+### Umbrales de alerta — RCI
+
+| RCI | Estado | Acción sugerida |
+|-----|--------|-----------------|
+| Menos de 25% | Bajo riesgo | Aprobación directa |
+| Entre 25% y 35% | Atención | Análisis estándar |
+| Entre 35% y 50% | Riesgo alto | Requiere garantía o codeudor |
+| Mayor a 50% | Riesgo crítico | Negar o reestructurar condiciones |
+
+### Algoritmo
+
+- **Gradient Boosting (GBM)** — 150 árboles, profundidad 4, tasa de aprendizaje 0.10
+- **Preprocesamiento:** StandardScaler (variables numéricas) + OneHotEncoding (variables categóricas)
+- **Validación:** Split estratificado 80/20
+
+### Métricas del modelo en conjunto de prueba
+
+| Métrica | Valor |
+|---------|-------|
+| Accuracy | {METRICS['accuracy']:.2%} |
+| AUC-ROC | {METRICS['auc']:.3f} |
+| Precisión | {METRICS['precision']:.2%} |
+| Recall | {METRICS['recall']:.2%} |
+| F1-Score | {METRICS['f1']:.2%} |
+| Muestras de prueba | {len(X_test):,} |
+
+> Los datos de entrenamiento son sintéticos, calibrados al perfil de clientes de microfinanzas colombianas.
+> El modelo original fue entrenado con datos reales de Fundación Amanecer, los cuales son de uso privado.
+""",
+}
 
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -695,7 +913,7 @@ EMPTY_RESULT = """
 """
 
 with gr.Blocks(
-    title="Predictor de Riesgo Crediticio — Microfinanzas",
+    title="Credit Risk Predictor — Microfinance",
     theme=gr.themes.Base(
         primary_hue="blue",
         neutral_hue="slate",
@@ -704,125 +922,194 @@ with gr.Blocks(
     css=CSS,
 ) as demo:
 
-    gr.HTML("""
-    <div class="app-header">
-        <div style="font-size:1.5em; font-weight:800; margin-bottom:4px; letter-spacing:-0.02em;">
-            Predictor de Riesgo Crediticio
-        </div>
-        <div style="font-size:0.92em; opacity:0.75; font-weight:400;">
-            Fundación Amanecer &nbsp;·&nbsp; DS4A Correlation One &nbsp;·&nbsp; Equipo 84
-        </div>
-        <div style="margin-top:10px; font-size:0.83em; opacity:0.60;">
-            Evalúa el riesgo de mora de solicitudes de microcrédito mediante Gradient Boosting
-            entrenado con datos calibrados al perfil real de clientes colombianos.
-        </div>
-    </div>
-    """)
+    lang_state = gr.State("en")
 
-    with gr.Tabs():
+    header_html = gr.HTML(_header_html("en"))
 
-        # ── Tab 1: Evaluar ─────────────────────────────────────────────────────
-        with gr.Tab("Evaluar Solicitud"):
+    with gr.Tabs() as tabs:
+
+        # ── Tab 1: Evaluate ────────────────────────────────────────────────────
+        with gr.Tab("Evaluate Application", id="tab_eval") as tab_eval:
             with gr.Row(equal_height=False):
 
-                # Column 1 — Financial
                 with gr.Column(scale=1):
-                    gr.HTML("<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
-                            "letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>Información Financiera</div>")
+                    sec_fin = gr.HTML(_sec_html("en", "sec_financial"))
                     ingreso_in = gr.Number(
-                        value=1_800_000, label="Ingreso mensual neto (COP)",
-                        info="Ingresos regulares declarados por el solicitante")
+                        value=1_800_000,
+                        label=T["en"]["lbl_ingreso"],
+                        info=T["en"]["inf_ingreso"])
                     monto_in = gr.Number(
-                        value=5_000_000, label="Monto solicitado (COP)",
-                        info="Capital del crédito, sin intereses")
+                        value=5_000_000,
+                        label=T["en"]["lbl_monto"],
+                        info=T["en"]["inf_monto"])
                     cuotas_in = gr.Dropdown(
                         [6, 9, 12, 18, 24, 36, 48], value=12,
-                        label="Número de cuotas")
+                        label=T["en"]["lbl_cuotas"])
                     tasa_in = gr.Slider(
                         0.015, 0.042, value=0.022, step=0.001,
-                        label="Tasa mensual N.A.M.V.")
+                        label=T["en"]["lbl_tasa"])
                     historial_in = gr.Dropdown(
-                        HISTORIAL, value="bueno",
-                        label="Historial crediticio",
-                        info="DataCrédito / TransUnion")
+                        choices=CHOICES["en"]["historial"], value="bueno",
+                        label=T["en"]["lbl_historial"],
+                        info=T["en"]["inf_historial"])
 
-                # Column 2 — Demographics
                 with gr.Column(scale=1):
-                    gr.HTML("<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
-                            "letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>Perfil del Solicitante</div>")
-                    edad_in       = gr.Slider(20, 70, value=38, step=1, label="Edad (años)")
-                    num_dep_in    = gr.Slider(0, 6, value=2, step=1, label="Personas a cargo")
-                    antiguedad_in = gr.Slider(0, 25, value=3, step=1, label="Antigüedad laboral (años)")
-                    genero_in     = gr.Dropdown(GENDERS,    value="femenino",    label="Género")
-                    civil_in      = gr.Dropdown(CIVIL,      value="unión libre", label="Estado civil")
-                    educ_in       = gr.Dropdown(EDUCATION,  value="secundaria",  label="Nivel educativo")
-                    mujer_in      = gr.Dropdown(YES_NO, value="no",  label="Mujer cabeza de hogar")
-                    resp_in       = gr.Dropdown(YES_NO, value="si",  label="Responsable principal del hogar")
+                    sec_prof = gr.HTML(_sec_html("en", "sec_profile"))
+                    edad_in       = gr.Slider(20, 70, value=38, step=1, label=T["en"]["lbl_edad"])
+                    num_dep_in    = gr.Slider(0, 6, value=2, step=1,   label=T["en"]["lbl_dep"])
+                    antiguedad_in = gr.Slider(0, 25, value=3, step=1,  label=T["en"]["lbl_antiguedad"])
+                    genero_in  = gr.Dropdown(choices=CHOICES["en"]["genero"],
+                                             value="femenino",   label=T["en"]["lbl_genero"])
+                    civil_in   = gr.Dropdown(choices=CHOICES["en"]["civil"],
+                                             value="unión libre", label=T["en"]["lbl_civil"])
+                    educ_in    = gr.Dropdown(choices=CHOICES["en"]["educ"],
+                                             value="secundaria",  label=T["en"]["lbl_educ"])
+                    mujer_in   = gr.Dropdown(choices=CHOICES["en"]["yesno"],
+                                             value="no",          label=T["en"]["lbl_mujer"])
+                    resp_in    = gr.Dropdown(choices=CHOICES["en"]["yesno"],
+                                             value="si",          label=T["en"]["lbl_resp"])
 
-                # Column 3 — Location
                 with gr.Column(scale=1):
-                    gr.HTML("<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
-                            "letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>Ubicación y Actividad</div>")
-                    sector_in    = gr.Dropdown(SECTORS,    value="urbano",           label="Sector")
-                    regional_in  = gr.Dropdown(REGIONS,    value="bogotá d.c.",      label="Regional")
-                    actividad_in = gr.Dropdown(ACTIVITIES, value="comercio minorista", label="Actividad económica")
-                    vivienda_in  = gr.Dropdown(HOUSING,    value="propia sin deuda", label="Tipo de vivienda")
+                    sec_loc = gr.HTML(_sec_html("en", "sec_location"))
+                    sector_in    = gr.Dropdown(choices=CHOICES["en"]["sector"],
+                                               value="urbano",            label=T["en"]["lbl_sector"])
+                    regional_in  = gr.Dropdown(choices=CHOICES["en"]["regional"],
+                                               value="bogotá d.c.",       label=T["en"]["lbl_regional"])
+                    actividad_in = gr.Dropdown(choices=CHOICES["en"]["actividad"],
+                                               value="comercio minorista", label=T["en"]["lbl_actividad"])
+                    vivienda_in  = gr.Dropdown(choices=CHOICES["en"]["vivienda"],
+                                               value="propia sin deuda",  label=T["en"]["lbl_vivienda"])
 
-            predict_btn = gr.Button(
-                "Evaluar Riesgo Crediticio",
-                variant="primary", size="lg",
-            )
-            result_out = gr.HTML(value=EMPTY_RESULT)
+            predict_btn = gr.Button(T["en"]["btn_predict"], variant="primary", size="lg")
+            result_out  = gr.HTML(value=_empty_result("en"))
 
             predict_btn.click(
-                predict_risk,
+                lambda edad, ingreso, monto, cuotas, tasa, dep, ant,
+                       sector, regional, actividad, vivienda,
+                       civil, genero, educ, mujer, resp, historial, lang: predict_risk(
+                    edad, ingreso, monto, cuotas, tasa, dep, ant,
+                    sector, regional, actividad, vivienda,
+                    civil, genero, educ, mujer, resp, historial, lang,
+                ),
                 inputs=[
                     edad_in, ingreso_in, monto_in, cuotas_in, tasa_in,
                     num_dep_in, antiguedad_in,
                     sector_in, regional_in, actividad_in, vivienda_in,
                     civil_in, genero_in, educ_in, mujer_in, resp_in,
-                    historial_in,
+                    historial_in, lang_state,
                 ],
                 outputs=[result_out],
             )
 
-        # ── Tab 2: Model Performance ───────────────────────────────────────────
-        with gr.Tab("Desempeño del Modelo"):
-            gr.HTML(f"""
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0;">
-                {"".join(
-                    f'<div style="background:#ffffff;border:1px solid #dde3ec;border-radius:10px;'
-                    f'padding:16px;text-align:center;">'
-                    f'<div style="font-size:0.72em;font-weight:700;text-transform:uppercase;'
-                    f'letter-spacing:0.06em;color:#64748b;margin-bottom:6px;">{name}</div>'
-                    f'<div style="font-size:1.5em;font-weight:800;color:#1e3a5f;">{val}</div>'
-                    f'</div>'
-                    for name, val in [
-                        ("Accuracy",   f"{METRICS['accuracy']:.2%}"),
-                        ("AUC-ROC",    f"{METRICS['auc']:.3f}"),
-                        ("Precision",  f"{METRICS['precision']:.2%}"),
-                        ("Recall",     f"{METRICS['recall']:.2%}"),
-                        ("F1-Score",   f"{METRICS['f1']:.2%}"),
-                    ]
-                )}
-            </div>
-            """)
+        # ── Tab 2: Performance ─────────────────────────────────────────────────
+        with gr.Tab("Model Performance", id="tab_perf") as tab_perf:
+            metrics_html = gr.HTML(_metrics_html("en"))
             with gr.Row():
-                cm_plot = gr.Plot(label="Matriz de Confusión")
-                fi_plot = gr.Plot(label="Importancia de Variables")
+                cm_plot = gr.Plot(label="Confusion Matrix")
+                fi_plot = gr.Plot(label="Feature Importance")
             with gr.Row():
-                rci_plot    = gr.Plot(label="RCI e Historial Crediticio")
-                income_plot = gr.Plot(label="Ingreso vs Mora")
+                rci_plot    = gr.Plot(label="PTI & Credit History")
+                income_plot = gr.Plot(label="Income vs Default")
 
-            load_btn = gr.Button("Cargar gráficas", variant="secondary")
+            load_btn = gr.Button(T["en"]["btn_charts"], variant="secondary")
             load_btn.click(
                 lambda: (_cm_fig(), _fi_fig(), _rci_fig(), _income_fig()),
                 outputs=[cm_plot, fi_plot, rci_plot, income_plot],
             )
 
         # ── Tab 3: Methodology ─────────────────────────────────────────────────
-        with gr.Tab("Metodología"):
-            gr.Markdown(METHODOLOGY)
+        with gr.Tab("Methodology", id="tab_method") as tab_method:
+            method_md = gr.Markdown(METHODOLOGY_LANG["en"])
+
+    # ── Language toggle (rendered via JS after mount) ──────────────────────────
+    gr.HTML("""
+    <script>
+    function setLangToggle() {
+        const container = document.getElementById('lang-toggle');
+        if (!container) { setTimeout(setLangToggle, 300); return; }
+        if (container.children.length > 0) return;
+        ['ENG','SPA'].forEach((lbl, i) => {
+            const btn = document.createElement('button');
+            btn.textContent = lbl;
+            btn.dataset.lang = i === 0 ? 'en' : 'es';
+            btn.style.cssText = `
+                padding: 7px 18px; border: none; cursor: pointer;
+                font-family: Inter, sans-serif; font-size: 0.82em;
+                font-weight: 700; letter-spacing: 0.05em;
+                background: ${i === 0 ? 'rgba(255,255,255,0.22)' : 'transparent'};
+                color: ${i === 0 ? '#ffffff' : 'rgba(255,255,255,0.5)'};
+                transition: all 0.15s;
+            `;
+            btn.onclick = () => {
+                document.querySelectorAll('#lang-toggle button').forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color = 'rgba(255,255,255,0.5)';
+                });
+                btn.style.background = 'rgba(255,255,255,0.22)';
+                btn.style.color = '#ffffff';
+                // Trigger Gradio language state update
+                const hiddenBtn = document.getElementById('lang-' + btn.dataset.lang);
+                if (hiddenBtn) hiddenBtn.click();
+            };
+            container.appendChild(btn);
+        });
+    }
+    setLangToggle();
+    </script>
+    """)
+
+    # Hidden trigger buttons for language switching
+    with gr.Row(visible=False):
+        lang_en_btn = gr.Button("en", elem_id="lang-en")
+        lang_es_btn = gr.Button("es", elem_id="lang-es")
+
+    def switch_lang(lang):
+        t  = T[lang]
+        ch = CHOICES[lang]
+        return (
+            lang,
+            _header_html(lang),
+            _sec_html(lang, "sec_financial"),
+            _sec_html(lang, "sec_profile"),
+            _sec_html(lang, "sec_location"),
+            gr.update(label=t["lbl_ingreso"],   info=t["inf_ingreso"]),
+            gr.update(label=t["lbl_monto"],      info=t["inf_monto"]),
+            gr.update(label=t["lbl_cuotas"]),
+            gr.update(label=t["lbl_tasa"]),
+            gr.update(label=t["lbl_historial"],  info=t["inf_historial"], choices=ch["historial"]),
+            gr.update(label=t["lbl_edad"]),
+            gr.update(label=t["lbl_dep"]),
+            gr.update(label=t["lbl_antiguedad"]),
+            gr.update(label=t["lbl_genero"],     choices=ch["genero"]),
+            gr.update(label=t["lbl_civil"],      choices=ch["civil"]),
+            gr.update(label=t["lbl_educ"],       choices=ch["educ"]),
+            gr.update(label=t["lbl_mujer"],      choices=ch["yesno"]),
+            gr.update(label=t["lbl_resp"],       choices=ch["yesno"]),
+            gr.update(label=t["lbl_sector"],     choices=ch["sector"]),
+            gr.update(label=t["lbl_regional"],   choices=ch["regional"]),
+            gr.update(label=t["lbl_actividad"],  choices=ch["actividad"]),
+            gr.update(label=t["lbl_vivienda"],   choices=ch["vivienda"]),
+            gr.update(value=t["btn_predict"]),
+            _empty_result(lang),
+            _metrics_html(lang),
+            gr.update(value=t["btn_charts"]),
+            gr.Markdown(METHODOLOGY_LANG[lang]),
+        )
+
+    lang_outputs = [
+        lang_state, header_html,
+        sec_fin, sec_prof, sec_loc,
+        ingreso_in, monto_in, cuotas_in, tasa_in, historial_in,
+        edad_in, num_dep_in, antiguedad_in,
+        genero_in, civil_in, educ_in, mujer_in, resp_in,
+        sector_in, regional_in, actividad_in, vivienda_in,
+        predict_btn, result_out,
+        metrics_html, load_btn,
+        method_md,
+    ]
+
+    lang_en_btn.click(lambda: switch_lang("en"), outputs=lang_outputs)
+    lang_es_btn.click(lambda: switch_lang("es"), outputs=lang_outputs)
 
 if __name__ == "__main__":
     demo.launch()
