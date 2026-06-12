@@ -508,7 +508,7 @@ T = {
         "lbl_monto":      "Requested amount (COP)",
         "inf_monto":      "Loan capital, excluding interest",
         "lbl_cuotas":     "Number of installments",
-        "lbl_tasa":       "Monthly interest rate N.A.M.V.",
+        "lbl_tasa":       "Monthly interest rate N.A.M.V. (%)",
         "lbl_historial":  "Credit history",
         "inf_historial":  "DataCrédito / TransUnion",
         "lbl_edad":       "Age (years)",
@@ -545,7 +545,7 @@ T = {
         "lbl_monto":      "Monto solicitado (COP)",
         "inf_monto":      "Capital del crédito, sin intereses",
         "lbl_cuotas":     "Número de cuotas",
-        "lbl_tasa":       "Tasa mensual N.A.M.V.",
+        "lbl_tasa":       "Tasa mensual N.A.M.V. (%)",
         "lbl_historial":  "Historial crediticio",
         "inf_historial":  "DataCrédito / TransUnion",
         "lbl_edad":       "Edad (años)",
@@ -804,7 +804,7 @@ body, .gradio-container, .main, .app {
     background: #eef2f7 !important;
 }
 .gradio-container {
-    max-width: 1120px !important;
+    max-width: 1520px !important;
     margin: 0 auto !important;
     padding: 16px !important;
 }
@@ -952,7 +952,17 @@ footer { display: none !important; }
     font-size: 0.78em !important;
 }
 
-/* ── Primary action button ── */
+/* ── Primary action button (centered, fixed width) ── */
+.predict-row {
+    display: flex !important;
+    justify-content: center !important;
+    padding: 8px 0 !important;
+}
+.predict-btn-col {
+    max-width: 480px !important;
+    min-width: 280px !important;
+    width: 38% !important;
+}
 button.primary, .btn-primary {
     background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%) !important;
     border: none !important;
@@ -963,6 +973,7 @@ button.primary, .btn-primary {
     letter-spacing: 0.02em !important;
     box-shadow: 0 3px 12px rgba(30,58,95,0.30) !important;
     transition: opacity 0.15s !important;
+    width: 100% !important;
 }
 button.primary:hover { opacity: 0.9 !important; }
 
@@ -1037,8 +1048,9 @@ with gr.Blocks(
                         [6, 9, 12, 18, 24, 36, 48], value=12,
                         label=T["en"]["lbl_cuotas"])
                     tasa_in = gr.Slider(
-                        0.015, 0.042, value=0.022, step=0.001,
-                        label=T["en"]["lbl_tasa"])
+                        1.5, 4.2, value=2.2, step=0.1,
+                        label=T["en"]["lbl_tasa"],
+                        info="e.g. 2.2 = 2.2% monthly")
                     historial_in = gr.Dropdown(
                         choices=CHOICES["en"]["historial"], value="bueno",
                         label=T["en"]["lbl_historial"],
@@ -1071,14 +1083,17 @@ with gr.Blocks(
                     vivienda_in  = gr.Dropdown(choices=CHOICES["en"]["vivienda"],
                                                value="propia sin deuda",   label=T["en"]["lbl_vivienda"])
 
-            predict_btn = gr.Button(T["en"]["btn_predict"], variant="primary", size="lg")
+            with gr.Row(elem_classes=["predict-row"]):
+                with gr.Column(scale=0, elem_classes=["predict-btn-col"]):
+                    predict_btn = gr.Button(T["en"]["btn_predict"], variant="primary", size="lg")
+
             result_out  = gr.HTML(value=_empty_result("en"))
 
             predict_btn.click(
                 lambda edad, ingreso, monto, cuotas, tasa, dep, ant,
                        sector, regional, actividad, vivienda,
                        civil, genero, educ, mujer, resp, historial, lang: predict_risk(
-                    edad, ingreso, monto, cuotas, tasa, dep, ant,
+                    edad, ingreso, monto, cuotas, tasa / 100, dep, ant,
                     sector, regional, actividad, vivienda,
                     civil, genero, educ, mujer, resp, historial, lang,
                 ),
