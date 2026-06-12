@@ -520,9 +520,9 @@ def predict_risk(
     font-size: 0.88em;
     color: #475569;
   ">
-    <span>💳 <b>Costo total del crédito:</b> ${cuota_est * int(cuotas):,.0f} COP</span>
-    <span>📈 <b>Costo financiero:</b> ${cuota_est * int(cuotas) - monto:,.0f} COP ({(cuota_est * int(cuotas) / monto - 1)*100:.1f}% sobre el capital)</span>
-    <span>📅 <b>Monto solicitado:</b> ${monto:,.0f} COP</span>
+    <span><b>Costo total del crédito:</b> ${cuota_est * int(cuotas):,.0f} COP</span>
+    <span><b>Costo financiero:</b> ${cuota_est * int(cuotas) - monto:,.0f} COP ({(cuota_est * int(cuotas) / monto - 1)*100:.1f}% sobre el capital)</span>
+    <span><b>Monto solicitado:</b> ${monto:,.0f} COP</span>
   </div>
 
 </div>
@@ -531,75 +531,204 @@ def predict_risk(
 
 
 # ── Gradio UI ──────────────────────────────────────────────────────────────────
-HEADER = """
-# 💳 Predictor de Riesgo Crediticio — Microfinanzas
-### Fundación Amanecer · DS4A Correlation One · Equipo 84
 
-Evalúa el riesgo de mora de un crédito de microfinanzas usando **Gradient Boosting** 
-entrenado con datos calibrados al perfil real de clientes colombianos.
+METHODOLOGY = f"""
+## Metodología del Modelo
 
-> ℹ️ Demo con datos sintéticos. El modelo original fue entrenado con datos de Fundación Amanecer.
-"""
+### Variables del modelo
 
-METHODOLOGY = """
-## 🔬 Metodología
+| Variable | Descripción | Relevancia |
+|----------|-------------|------------|
+| **RCI** — Relación Cuota/Ingreso | Cuota mensual estimada ÷ Ingreso mensual | Alta |
+| **Ingreso mensual** | Ingresos netos declarados (COP) | Alta |
+| **Monto del crédito** | Capital solicitado (COP) | Alta |
+| **Historial crediticio** | Comportamiento previo en centrales de riesgo | Alta |
+| **Tasa de interés** | Tasa N.A.M.V. mensual pactada | Media |
+| **Plazo** | Número de cuotas pactadas | Media |
+| **Antigüedad laboral** | Años en el trabajo actual | Media |
+| **Edad** | Años cumplidos del solicitante | Media |
+| **Personas a cargo** | Número de dependientes económicos | Media |
 
-### Variables clave del modelo
+### Umbrales de alerta — RCI
 
-| Variable | Descripción | Importancia |
-|----------|-------------|-------------|
-| **RCI** (Relación Cuota/Ingreso) | Cuota mensual ÷ Ingreso mensual | ★★★★★ |
-| **Ingreso mensual** | Ingresos netos declarados (COP) | ★★★★☆ |
-| **Monto del crédito** | Capital solicitado (COP) | ★★★★☆ |
-| **Historial crediticio** | Comportamiento previo en centrales | ★★★★☆ |
-| **Tasa de interés** | Tasa N.A.M.V. mensual | ★★★☆☆ |
-| **Plazo (cuotas)** | Número de cuotas pactadas | ★★★☆☆ |
-| **Antigüedad laboral** | Años en trabajo actual | ★★★☆☆ |
-| **Edad** | Años cumplidos | ★★☆☆☆ |
-| **N.° dependientes** | Personas a cargo | ★★☆☆☆ |
-
-### Umbrales de alerta (RCI)
-
-| RCI | Semáforo | Acción sugerida |
-|-----|----------|-----------------|
-| < 25% | 🟢 | Aprobación directa |
-| 25% – 35% | 🟡 | Análisis estándar |
-| 35% – 50% | 🟠 | Requiere garantía o codeudor |
-| > 50% | 🔴 | Negar o reestructurar |
+| RCI | Estado | Acción sugerida |
+|-----|--------|-----------------|
+| Menos de 25% | Bajo riesgo | Aprobación directa |
+| Entre 25% y 35% | Atención | Análisis estándar |
+| Entre 35% y 50% | Riesgo alto | Requiere garantía o codeudor |
+| Mayor a 50% | Riesgo crítico | Negar o reestructurar condiciones |
 
 ### Algoritmo
-- **Gradient Boosting (GBM)** — 400 árboles, profundidad 5, tasa de aprendizaje 0.08
-- **Preprocesamiento:** StandardScaler (numérico) + OneHotEncoding (categórico)
+
+- **Gradient Boosting (GBM)** — 150 árboles, profundidad 4, tasa de aprendizaje 0.10
+- **Preprocesamiento:** StandardScaler (variables numéricas) + OneHotEncoding (variables categóricas)
 - **Validación:** Split estratificado 80/20
+
+### Métricas del modelo en conjunto de prueba
+
+| Métrica | Valor |
+|---------|-------|
+| Accuracy | {METRICS['accuracy']:.2%} |
+| AUC-ROC | {METRICS['auc']:.3f} |
+| Precision | {METRICS['precision']:.2%} |
+| Recall | {METRICS['recall']:.2%} |
+| F1-Score | {METRICS['f1']:.2%} |
+| Muestras de prueba | {len(X_test):,} |
+
+> Los datos de entrenamiento son sintéticos, calibrados al perfil de clientes de microfinanzas colombianas.
+> El modelo original fue entrenado con datos reales de Fundación Amanecer, los cuales son de uso privado.
+"""
+
+CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+*, body, .gradio-container {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+}
+body, .gradio-container, .main {
+    background: #f0f4f8 !important;
+}
+.gradio-container {
+    max-width: 1080px !important;
+    margin: 0 auto !important;
+    padding: 0 16px !important;
+}
+footer { display: none !important; }
+
+/* Header bar */
+.app-header {
+    background: #1e3a5f;
+    border-radius: 12px;
+    padding: 24px 32px;
+    margin-bottom: 4px;
+    color: white;
+}
+
+/* Tab bar */
+.tabs > .tab-nav {
+    background: #ffffff !important;
+    border-radius: 10px !important;
+    padding: 6px !important;
+    border: 1px solid #dde3ec !important;
+    gap: 6px !important;
+    margin-bottom: 16px !important;
+    display: flex !important;
+}
+.tabs > .tab-nav > button {
+    flex: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 12px 20px !important;
+    font-size: 0.95em !important;
+    font-weight: 600 !important;
+    color: #64748b !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+.tabs > .tab-nav > button:hover {
+    background: #f1f5f9 !important;
+    color: #1e3a5f !important;
+}
+.tabs > .tab-nav > button.selected {
+    background: #1e3a5f !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(30,58,95,0.25) !important;
+}
+
+/* Form panels */
+.gr-panel, .gr-box, .gr-form, .block {
+    background: #ffffff !important;
+    border: 1px solid #dde3ec !important;
+    border-radius: 10px !important;
+}
+
+/* Labels */
+label > span, .gr-label {
+    font-size: 0.82em !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+}
+
+/* Primary button */
+button.primary {
+    background: #1e3a5f !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    font-size: 1.0em !important;
+    padding: 14px 28px !important;
+    letter-spacing: 0.02em !important;
+}
+button.primary:hover {
+    background: #16304f !important;
+}
+
+/* Secondary button */
+button.secondary {
+    border: 1.5px solid #1e3a5f !important;
+    color: #1e3a5f !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+}
+
+/* Sliders accent */
+input[type=range]::-webkit-slider-thumb { background: #1e3a5f !important; }
+"""
+
+EMPTY_RESULT = """
+<div style="
+    background: #ffffff;
+    border: 1px solid #dde3ec;
+    border-radius: 10px;
+    padding: 40px 24px;
+    text-align: center;
+    color: #94a3b8;
+    font-family: Inter, sans-serif;
+    font-size: 0.95em;
+">
+    Complete el formulario y haga clic en <strong style="color:#1e3a5f;">Evaluar Riesgo Crediticio</strong>
+    para obtener el análisis.
+</div>
 """
 
 with gr.Blocks(
     title="Predictor de Riesgo Crediticio — Microfinanzas",
-    theme=gr.themes.Default(
-        primary_hue="green",
+    theme=gr.themes.Base(
+        primary_hue="blue",
         neutral_hue="slate",
         font=gr.themes.GoogleFont("Inter"),
     ),
-    css="""
-    body, .gradio-container { background: #ffffff !important; }
-    .gradio-container { max-width: 1120px !important; }
-    footer { display: none !important; }
-    .gr-form { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 12px !important; }
-    label { font-weight: 600 !important; color: #374151 !important; }
-    """,
+    css=CSS,
 ) as demo:
 
-    gr.Markdown(HEADER)
+    gr.HTML("""
+    <div class="app-header">
+        <div style="font-size:1.5em; font-weight:800; margin-bottom:4px; letter-spacing:-0.02em;">
+            Predictor de Riesgo Crediticio
+        </div>
+        <div style="font-size:0.92em; opacity:0.75; font-weight:400;">
+            Fundación Amanecer &nbsp;·&nbsp; DS4A Correlation One &nbsp;·&nbsp; Equipo 84
+        </div>
+        <div style="margin-top:10px; font-size:0.83em; opacity:0.60;">
+            Evalúa el riesgo de mora de solicitudes de microcrédito mediante Gradient Boosting
+            entrenado con datos calibrados al perfil real de clientes colombianos.
+        </div>
+    </div>
+    """)
 
     with gr.Tabs():
 
-        # ── Tab 1: Predict ─────────────────────────────────────────────────────
-        with gr.Tab("🔮 Evaluar Solicitud"):
+        # ── Tab 1: Evaluar ─────────────────────────────────────────────────────
+        with gr.Tab("Evaluar Solicitud"):
+            with gr.Row(equal_height=False):
 
-            with gr.Row():
-                # Column 1 — Financial info
+                # Column 1 — Financial
                 with gr.Column(scale=1):
-                    gr.Markdown("### 💰 Información Financiera")
+                    gr.HTML("<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
+                            "letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>Información Financiera</div>")
                     ingreso_in = gr.Number(
                         value=1_800_000, label="Ingreso mensual neto (COP)",
                         info="Ingresos regulares declarados por el solicitante")
@@ -611,44 +740,39 @@ with gr.Blocks(
                         label="Número de cuotas")
                     tasa_in = gr.Slider(
                         0.015, 0.042, value=0.022, step=0.001,
-                        label="Tasa mensual N.A.M.V. (ej. 0.022 = 2.2%)")
+                        label="Tasa mensual N.A.M.V.")
                     historial_in = gr.Dropdown(
                         HISTORIAL, value="bueno",
                         label="Historial crediticio",
-                        info="Centrales de riesgo: DataCrédito / TransUnion")
+                        info="DataCrédito / TransUnion")
 
                 # Column 2 — Demographics
                 with gr.Column(scale=1):
-                    gr.Markdown("### 👤 Perfil del Solicitante")
-                    edad_in     = gr.Slider(20, 70, value=38, step=1, label="Edad (años)")
-                    num_dep_in  = gr.Slider(0, 6, value=2, step=1, label="N.° personas a cargo")
-                    antiguedad_in = gr.Slider(0, 25, value=3, step=1,
-                                              label="Antigüedad laboral (años)")
-                    genero_in   = gr.Dropdown(GENDERS,  value="femenino", label="Género")
-                    civil_in    = gr.Dropdown(CIVIL,    value="unión libre", label="Estado civil")
-                    educ_in     = gr.Dropdown(EDUCATION, value="secundaria", label="Nivel educativo")
-                    mujer_in    = gr.Dropdown(YES_NO, value="no",
-                                              label="¿Mujer cabeza de hogar?")
-                    resp_in     = gr.Dropdown(YES_NO, value="si",
-                                              label="¿Responsable principal del hogar?")
+                    gr.HTML("<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
+                            "letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>Perfil del Solicitante</div>")
+                    edad_in       = gr.Slider(20, 70, value=38, step=1, label="Edad (años)")
+                    num_dep_in    = gr.Slider(0, 6, value=2, step=1, label="Personas a cargo")
+                    antiguedad_in = gr.Slider(0, 25, value=3, step=1, label="Antigüedad laboral (años)")
+                    genero_in     = gr.Dropdown(GENDERS,    value="femenino",    label="Género")
+                    civil_in      = gr.Dropdown(CIVIL,      value="unión libre", label="Estado civil")
+                    educ_in       = gr.Dropdown(EDUCATION,  value="secundaria",  label="Nivel educativo")
+                    mujer_in      = gr.Dropdown(YES_NO, value="no",  label="Mujer cabeza de hogar")
+                    resp_in       = gr.Dropdown(YES_NO, value="si",  label="Responsable principal del hogar")
 
-                # Column 3 — Location & activity
+                # Column 3 — Location
                 with gr.Column(scale=1):
-                    gr.Markdown("### 📍 Ubicación y Actividad")
-                    sector_in   = gr.Dropdown(SECTORS,    value="urbano", label="Sector")
-                    regional_in = gr.Dropdown(REGIONS,    value="bogotá d.c.", label="Regional")
-                    actividad_in = gr.Dropdown(ACTIVITIES, value="comercio minorista",
-                                               label="Actividad económica")
-                    vivienda_in  = gr.Dropdown(HOUSING,   value="propia sin deuda",
-                                               label="Tipo de vivienda")
+                    gr.HTML("<div style='font-size:0.78em;font-weight:700;text-transform:uppercase;"
+                            "letter-spacing:0.08em;color:#1e3a5f;padding:8px 0 4px;'>Ubicación y Actividad</div>")
+                    sector_in    = gr.Dropdown(SECTORS,    value="urbano",           label="Sector")
+                    regional_in  = gr.Dropdown(REGIONS,    value="bogotá d.c.",      label="Regional")
+                    actividad_in = gr.Dropdown(ACTIVITIES, value="comercio minorista", label="Actividad económica")
+                    vivienda_in  = gr.Dropdown(HOUSING,    value="propia sin deuda", label="Tipo de vivienda")
 
-            predict_btn = gr.Button("🔍 Evaluar Riesgo Crediticio", variant="primary", size="lg")
-
-            result_out = gr.HTML(
-                value="<div style='color:#94a3b8; font-family:Inter,sans-serif; "
-                      "text-align:center; padding:32px; font-size:0.95em;'>"
-                      "Complete el formulario y haga clic en <b>Evaluar</b> para ver el resultado.</div>"
+            predict_btn = gr.Button(
+                "Evaluar Riesgo Crediticio",
+                variant="primary", size="lg",
             )
+            result_out = gr.HTML(value=EMPTY_RESULT)
 
             predict_btn.click(
                 predict_risk,
@@ -663,17 +787,26 @@ with gr.Blocks(
             )
 
         # ── Tab 2: Model Performance ───────────────────────────────────────────
-        with gr.Tab("📊 Desempeño del Modelo"):
-            gr.Markdown(
-                f"### Gradient Boosting — Resultados en Test Set\n"
-                f"| Métrica | Valor |\n|---------|-------|\n"
-                f"| **Accuracy** | `{METRICS['accuracy']:.2%}` |\n"
-                f"| **AUC-ROC** | `{METRICS['auc']:.3f}` |\n"
-                f"| **Precision** | `{METRICS['precision']:.2%}` |\n"
-                f"| **Recall** | `{METRICS['recall']:.2%}` |\n"
-                f"| **F1-Score** | `{METRICS['f1']:.2%}` |\n"
-                f"| Test samples | `{len(X_test):,}` |"
-            )
+        with gr.Tab("Desempeño del Modelo"):
+            gr.HTML(f"""
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0;">
+                {"".join(
+                    f'<div style="background:#ffffff;border:1px solid #dde3ec;border-radius:10px;'
+                    f'padding:16px;text-align:center;">'
+                    f'<div style="font-size:0.72em;font-weight:700;text-transform:uppercase;'
+                    f'letter-spacing:0.06em;color:#64748b;margin-bottom:6px;">{name}</div>'
+                    f'<div style="font-size:1.5em;font-weight:800;color:#1e3a5f;">{val}</div>'
+                    f'</div>'
+                    for name, val in [
+                        ("Accuracy",   f"{METRICS['accuracy']:.2%}"),
+                        ("AUC-ROC",    f"{METRICS['auc']:.3f}"),
+                        ("Precision",  f"{METRICS['precision']:.2%}"),
+                        ("Recall",     f"{METRICS['recall']:.2%}"),
+                        ("F1-Score",   f"{METRICS['f1']:.2%}"),
+                    ]
+                )}
+            </div>
+            """)
             with gr.Row():
                 cm_plot = gr.Plot(label="Matriz de Confusión")
                 fi_plot = gr.Plot(label="Importancia de Variables")
@@ -681,14 +814,14 @@ with gr.Blocks(
                 rci_plot    = gr.Plot(label="RCI e Historial Crediticio")
                 income_plot = gr.Plot(label="Ingreso vs Mora")
 
-            load_btn = gr.Button("📈 Cargar Gráficas", variant="secondary")
+            load_btn = gr.Button("Cargar gráficas", variant="secondary")
             load_btn.click(
                 lambda: (_cm_fig(), _fi_fig(), _rci_fig(), _income_fig()),
                 outputs=[cm_plot, fi_plot, rci_plot, income_plot],
             )
 
         # ── Tab 3: Methodology ─────────────────────────────────────────────────
-        with gr.Tab("📖 Metodología"):
+        with gr.Tab("Metodología"):
             gr.Markdown(METHODOLOGY)
 
 if __name__ == "__main__":
