@@ -812,6 +812,13 @@ body, .gradio-container, .main, .app,
     max-width: 1800px !important;
     margin: 0 auto !important;
     padding: 16px !important;
+    /* Override Gradio theme vars — fixes invisible tab/markdown text */
+    --body-text-color: #1e3a5f !important;
+    --body-text-color-subdued: #475569 !important;
+    --color-accent: #1e3a5f !important;
+    --background-fill-primary: #ffffff !important;
+    --background-fill-secondary: #eef2f7 !important;
+    --border-color-primary: #1e3a5f !important;
 }
 footer { display: none !important; }
 
@@ -859,18 +866,26 @@ footer { display: none !important; }
     background: #f0f4f8 !important;
 }
 
-/* ── Tabs ── */
-.tabs > .tab-nav {
+/* ── Tabs (Gradio 5 compatible selectors) ── */
+.tab-nav,
+.tab-container,
+[role="tablist"] {
     background: #ffffff !important;
     border-radius: 10px !important;
     padding: 5px !important;
     border: 1px solid #d0d9e6 !important;
     gap: 4px !important;
     margin-bottom: 20px !important;
-    display: flex !important;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
 }
-.tabs > .tab-nav > button {
+/* All tab buttons — inactive state */
+.tab-nav button,
+.tab-container button,
+[role="tablist"] button,
+[role="tab"],
+#tab-eval-button,
+#tab-perf-button,
+#tab-method-button {
     flex: 1 !important;
     background: transparent !important;
     border: none !important;
@@ -879,17 +894,30 @@ footer { display: none !important; }
     font-size: 1.05em !important;
     font-weight: 700 !important;
     color: #1e3a5f !important;
+    -webkit-text-fill-color: #1e3a5f !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
     letter-spacing: 0.01em !important;
+    opacity: 1 !important;
 }
-.tabs > .tab-nav > button:hover {
+.tab-nav button:hover,
+.tab-container button:hover,
+[role="tab"]:hover:not(.selected):not([aria-selected="true"]) {
     background: #dde6f0 !important;
     color: #1e3a5f !important;
+    -webkit-text-fill-color: #1e3a5f !important;
 }
-.tabs > .tab-nav > button.selected {
+/* Active tab */
+.tab-nav button.selected,
+.tab-container button.selected,
+[role="tab"].selected,
+[role="tab"][aria-selected="true"],
+#tab-eval-button.selected,
+#tab-perf-button.selected,
+#tab-method-button.selected {
     background: #1e3a5f !important;
     color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
     box-shadow: 0 2px 10px rgba(30,58,95,0.30) !important;
     font-weight: 800 !important;
 }
@@ -1194,7 +1222,7 @@ with gr.Blocks(
     with gr.Tabs():
 
         # ── Tab 1: Evaluate ────────────────────────────────────────────────────
-        with gr.Tab("Evaluate Application", id="tab_eval"):
+        with gr.Tab("Evaluate Application", id="tab_eval", elem_id="tab-eval"):
             with gr.Row(equal_height=False, elem_classes=["form-row"]):
 
                 with gr.Column(scale=1, elem_classes=["form-col"]):
@@ -1271,7 +1299,7 @@ with gr.Blocks(
             )
 
         # ── Tab 2: Performance ─────────────────────────────────────────────────
-        with gr.Tab("Model Performance", id="tab_perf"):
+        with gr.Tab("Model Performance", id="tab_perf", elem_id="tab-perf"):
             metrics_html = gr.HTML(_metrics_html("en"))
             with gr.Row():
                 cm_plot = gr.Plot(label="Confusion Matrix")
@@ -1290,7 +1318,7 @@ with gr.Blocks(
             )
 
         # ── Tab 3: Methodology ─────────────────────────────────────────────────
-        with gr.Tab("Methodology", id="tab_method"):
+        with gr.Tab("Methodology", id="tab_method", elem_id="tab-method"):
             method_md = gr.Markdown(METHODOLOGY_LANG["en"])
 
     # ── Language switch logic ──────────────────────────────────────────────────
