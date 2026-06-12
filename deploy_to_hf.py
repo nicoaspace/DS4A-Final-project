@@ -3,19 +3,19 @@ Deploy DS4A Loan Predictor to Hugging Face Spaces.
 
 Usage:
     python deploy_to_hf.py --token hf_xxxYOURTOKENxxx
+    python deploy_to_hf.py --token hf_xxxYOURTOKENxxx --force
 
 Get your token at: https://huggingface.co/settings/tokens
 (needs write access)
 """
 
 import argparse
-import os
 from pathlib import Path
+
 from huggingface_hub import HfApi, create_repo, upload_folder
 
-SPACE_ID   = "sazkicher/ds4a-loan-predictor"
-SPACE_NAME = "DS4A Loan Payment Predictor"
-REPO_DIR   = Path(__file__).parent
+SPACE_ID = "sazkicher/ds4a-loan-predictor"
+REPO_DIR = Path(__file__).parent
 
 FILES_TO_UPLOAD = [
     "app.py",
@@ -27,7 +27,8 @@ FILES_TO_UPLOAD = [
     "docs/images/default_rates.png",
 ]
 
-def deploy(token: str) -> None:
+
+def deploy(token: str, force: bool = False) -> None:
     api = HfApi(token=token)
 
     print(f"Creating / updating Space: {SPACE_ID}")
@@ -40,28 +41,33 @@ def deploy(token: str) -> None:
         private=False,
     )
 
-    print("Uploading files…")
+    print("Uploading files in a single commit…")
+    upload_folder(
+        folder_path=str(REPO_DIR),
+        repo_id=SPACE_ID,
+        repo_type="space",
+        token=token,
+        commit_message="Deploy DS4A loan predictor app",
+        allow_patterns=FILES_TO_UPLOAD,
+    )
     for rel_path in FILES_TO_UPLOAD:
-        local = REPO_DIR / rel_path
-        if not local.exists():
-            print(f"  ⚠️  Skipping (not found): {rel_path}")
-            continue
-        api.upload_file(
-            path_or_fileobj=str(local),
-            path_in_repo=rel_path,
-            repo_id=SPACE_ID,
-            repo_type="space",
-            token=token,
-            commit_message=f"Upload {rel_path}",
-        )
         print(f"  ✅  {rel_path}")
 
+    if force:
+        print("Forcing Space restart…")
+        api.restart_space(repo_id=SPACE_ID, token=token)
+
     print(f"\n🚀 Done! Your Space is live at:\n   https://huggingface.co/spaces/{SPACE_ID}\n")
-    print("It may take ~2 minutes to build on first deploy.")
+    print("Wait ~2 minutes for the build to finish.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Deploy to Hugging Face Spaces")
     parser.add_argument("--token", required=True, help="HF write token")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Restart the Space after upload",
+    )
     args = parser.parse_args()
-    deploy(args.token)
+    deploy(args.token, force=args.force)
