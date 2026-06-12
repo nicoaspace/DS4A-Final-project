@@ -323,7 +323,19 @@ def _income_fig() -> plt.Figure:
     return fig
 
 
-# ── Prediction ─────────────────────────────────────────────────────────────────
+# ── Risk tier config ───────────────────────────────────────────────────────────
+TIERS = [
+    (20,  "#16a34a", "#dcfce7", "#15803d", "RIESGO BAJO",
+     "Perfil sólido", "Aprobación recomendada"),
+    (40,  "#ca8a04", "#fef9c3", "#a16207", "RIESGO MODERADO",
+     "Revisar condiciones", "Solicitar aval o garantía adicional"),
+    (60,  "#ea580c", "#ffedd5", "#c2410c", "RIESGO ALTO",
+     "Riesgo elevado", "Requiere codeudor o garantía real"),
+    (101, "#dc2626", "#fee2e2", "#b91c1c", "RIESGO MUY ALTO",
+     "Perfil de alto riesgo", "No se recomienda el desembolso"),
+]
+
+
 def predict_risk(
     edad, ingreso_mensual, monto, cuotas, tasa,
     num_dependientes, antiguedad_laboral,
@@ -333,6 +345,7 @@ def predict_risk(
 ):
     cuota_est = calcular_cuota(monto, tasa, int(cuotas))
     rci       = cuota_est / ingreso_mensual
+    capacidad = ingreso_mensual - cuota_est
 
     row = pd.DataFrame([{
         "edad": edad, "ingreso_mensual": ingreso_mensual,
@@ -351,43 +364,170 @@ def predict_risk(
     proba    = pipeline.predict_proba(row)[0]
     risk_pct = proba[1] * 100
 
-    # ── Risk tier ──────────────────────────────────────────────────────────────
-    if risk_pct < 20:
-        tier = "🟢 RIESGO BAJO"
-        color_hint = "Perfil sólido. Crédito recomendado."
-    elif risk_pct < 40:
-        tier = "🟡 RIESGO MODERADO"
-        color_hint = "Revisar condiciones. Considerar aval o garantía."
-    elif risk_pct < 60:
-        tier = "🟠 RIESGO ALTO"
-        color_hint = "No recomendado sin garantía real o codeudor."
+    # Tier lookup
+    for limit, color, bg, dark, label, subtitle, action in TIERS:
+        if risk_pct < limit:
+            break
+
+    # ── RCI pill ───────────────────────────────────────────────────────────────
+    if rci > 0.50:
+        rci_bg, rci_color, rci_icon = "#fee2e2", "#b91c1c", "⚠"
+        rci_note = "Supera umbral crítico"
+    elif rci > 0.35:
+        rci_bg, rci_color, rci_icon = "#ffedd5", "#c2410c", "⚠"
+        rci_note = "Supera umbral del 35%"
+    elif rci > 0.25:
+        rci_bg, rci_color, rci_icon = "#fef9c3", "#a16207", "●"
+        rci_note = "Zona de atención"
     else:
-        tier = "🔴 RIESGO MUY ALTO"
-        color_hint = "Desembolso no recomendado."
+        rci_bg, rci_color, rci_icon = "#dcfce7", "#15803d", "✓"
+        rci_note = "Dentro del límite"
 
-    # ── Financial ratios ───────────────────────────────────────────────────────
-    cuota_fmt   = f"${cuota_est:,.0f} COP/mes"
-    rci_fmt     = f"{rci*100:.1f}%"
-    rci_alert   = " ⚠️ SUPERA EL UMBRAL (35%)" if rci > 0.35 else " ✅ dentro del límite"
-    capacidad   = ingreso_mensual - cuota_est
-    cap_fmt     = f"${capacidad:,.0f} COP/mes"
+    # ── Capacity pill ──────────────────────────────────────────────────────────
+    cap_color = "#b91c1c" if capacidad < 0 else "#15803d"
+    cap_bg    = "#fee2e2" if capacidad < 0 else "#dcfce7"
+    cap_icon  = "↓" if capacidad < 0 else "↑"
 
-    resumen = (
-        f"**{tier}** — Probabilidad de mora: {risk_pct:.1f}%\n\n"
-        f"{color_hint}"
-    )
-    ratios = (
-        f"📋 **Cuota mensual estimada:** {cuota_fmt}\n"
-        f"📊 **Relación Cuota/Ingreso (RCI):** {rci_fmt}{rci_alert}\n"
-        f"💰 **Capacidad de pago neta:** {cap_fmt}\n"
-        f"📅 **Plazo:** {int(cuotas)} cuotas"
-    )
+    # ── Progress bar width ─────────────────────────────────────────────────────
+    bar_w = min(risk_pct, 100)
 
-    bars_filled = min(int(risk_pct / 10), 10)
-    bar_color   = "█"
-    risk_bar    = f"[{'█' * bars_filled}{'░' * (10 - bars_filled)}] {risk_pct:.1f}%"
+    html = f"""
+<div style="font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; margin-top: 8px;">
 
-    return resumen, ratios, risk_bar
+  <!-- VERDICT CARD -->
+  <div style="
+    background: {bg};
+    border: 2px solid {color};
+    border-left: 6px solid {color};
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  ">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+      <div>
+        <div style="font-size:1.35em; font-weight:800; color:{dark}; letter-spacing:-0.02em;">
+          {label}
+        </div>
+        <div style="font-size:0.95em; color:{dark}; opacity:0.85; margin-top:2px;">
+          {subtitle} · {action}
+        </div>
+      </div>
+      <div style="
+        background: {dark};
+        color: white;
+        border-radius: 50px;
+        padding: 8px 20px;
+        font-size: 1.4em;
+        font-weight: 800;
+        white-space: nowrap;
+      ">
+        {risk_pct:.1f}% mora
+      </div>
+    </div>
+
+    <!-- Risk bar -->
+    <div style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; font-size:0.75em; color:{dark}; margin-bottom:4px;">
+        <span>Probabilidad de incumplimiento</span>
+        <span>{risk_pct:.1f}%</span>
+      </div>
+      <div style="background: rgba(0,0,0,0.10); border-radius:99px; height:10px; overflow:hidden;">
+        <div style="
+          width: {bar_w}%;
+          height: 100%;
+          background: {color};
+          border-radius: 99px;
+          transition: width 0.4s ease;
+        "></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.70em; color:{dark}; opacity:0.7; margin-top:3px;">
+        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRICS GRID -->
+  <div style="
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  ">
+
+    <!-- Cuota mensual -->
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:0.72em; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
+        Cuota Mensual Estimada
+      </div>
+      <div style="font-size:1.30em; font-weight:800; color:#0f172a;">
+        ${cuota_est:,.0f}
+      </div>
+      <div style="font-size:0.78em; color:#64748b; margin-top:2px;">COP / mes · Amort. francesa</div>
+    </div>
+
+    <!-- RCI -->
+    <div style="background:{rci_bg}; border:1px solid {rci_color}40; border-radius:10px; padding:16px;">
+      <div style="font-size:0.72em; font-weight:600; color:{rci_color}; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
+        Relación Cuota / Ingreso
+      </div>
+      <div style="font-size:1.30em; font-weight:800; color:{rci_color};">
+        {rci*100:.1f}%
+      </div>
+      <div style="font-size:0.78em; color:{rci_color}; margin-top:2px;">
+        {rci_icon} {rci_note} · umbral 35%
+      </div>
+    </div>
+
+    <!-- Capacidad neta -->
+    <div style="background:{cap_bg}; border:1px solid {cap_color}40; border-radius:10px; padding:16px;">
+      <div style="font-size:0.72em; font-weight:600; color:{cap_color}; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
+        Capacidad de Pago Neta
+      </div>
+      <div style="font-size:1.30em; font-weight:800; color:{cap_color};">
+        ${capacidad:,.0f}
+      </div>
+      <div style="font-size:0.78em; color:{cap_color}; margin-top:2px;">
+        {cap_icon} COP / mes disponibles
+      </div>
+    </div>
+
+    <!-- Plazo -->
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px;">
+      <div style="font-size:0.72em; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
+        Plazo Pactado
+      </div>
+      <div style="font-size:1.30em; font-weight:800; color:#0f172a;">
+        {int(cuotas)} cuotas
+      </div>
+      <div style="font-size:0.78em; color:#64748b; margin-top:2px;">
+        Tasa {tasa*100:.2f}% N.A.M.V. mensual
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOTAL COST ROW -->
+  <div style="
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.88em;
+    color: #475569;
+  ">
+    <span>💳 <b>Costo total del crédito:</b> ${cuota_est * int(cuotas):,.0f} COP</span>
+    <span>📈 <b>Costo financiero:</b> ${cuota_est * int(cuotas) - monto:,.0f} COP ({(cuota_est * int(cuotas) / monto - 1)*100:.1f}% sobre el capital)</span>
+    <span>📅 <b>Monto solicitado:</b> ${monto:,.0f} COP</span>
+  </div>
+
+</div>
+"""
+    return html
 
 
 # ── Gradio UI ──────────────────────────────────────────────────────────────────
@@ -435,10 +575,17 @@ METHODOLOGY = """
 
 with gr.Blocks(
     title="Predictor de Riesgo Crediticio — Microfinanzas",
-    theme=gr.themes.Soft(primary_hue="green", neutral_hue="slate"),
+    theme=gr.themes.Default(
+        primary_hue="green",
+        neutral_hue="slate",
+        font=gr.themes.GoogleFont("Inter"),
+    ),
     css="""
-    .gradio-container { max-width: 1100px !important; }
-    .risk-box { font-size: 1.1em; line-height: 1.7; }
+    body, .gradio-container { background: #ffffff !important; }
+    .gradio-container { max-width: 1120px !important; }
+    footer { display: none !important; }
+    .gr-form { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 12px !important; }
+    label { font-weight: 600 !important; color: #374151 !important; }
     """,
 ) as demo:
 
@@ -497,12 +644,11 @@ with gr.Blocks(
 
             predict_btn = gr.Button("🔍 Evaluar Riesgo Crediticio", variant="primary", size="lg")
 
-            with gr.Row():
-                resumen_out = gr.Markdown(label="Resultado", elem_classes="risk-box")
-
-            with gr.Row():
-                ratios_out  = gr.Markdown(label="Indicadores Financieros")
-                bar_out     = gr.Textbox(label="Nivel de Riesgo", interactive=False)
+            result_out = gr.HTML(
+                value="<div style='color:#94a3b8; font-family:Inter,sans-serif; "
+                      "text-align:center; padding:32px; font-size:0.95em;'>"
+                      "Complete el formulario y haga clic en <b>Evaluar</b> para ver el resultado.</div>"
+            )
 
             predict_btn.click(
                 predict_risk,
@@ -513,7 +659,7 @@ with gr.Blocks(
                     civil_in, genero_in, educ_in, mujer_in, resp_in,
                     historial_in,
                 ],
-                outputs=[resumen_out, ratios_out, bar_out],
+                outputs=[result_out],
             )
 
         # ── Tab 2: Model Performance ───────────────────────────────────────────
